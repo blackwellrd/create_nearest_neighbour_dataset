@@ -99,6 +99,13 @@ df_pcn_members <- read_excel(path = pcn_filename,
   filter(is.na(close_date)) %>%
   select(-3)
 
+# Add the PCN code to the GP registration data
+df_gp_popn <- df_gp_popn %>% 
+  left_join(df_pcn_members, by = 'prac_code') %>%
+  select(1, 5, 2:4)
+
+
+
 # * 1.4. Location to ICB to NHS England Region lookup ----
 # ````````````````````````````````````````````````````````
 df_loc_icb_nher_lu <- read_excel(path = loc_icb_nhser_lookup_filename,
@@ -162,8 +169,11 @@ sf_lsoa11 <- st_read(dsn = lsoa11_shapefile_dsn,
 df_gp_popn <- df_gp_popn %>% left_join(sf_lsoa11 %>% select(LSOA11CD, area_km2) %>% st_drop_geometry(),
                          by = c('lsoa11cd' = 'LSOA11CD'))
 
-
-
+# Add the population density to the index data frames
+df_gp_popn %>% 
+  mutate(popn_per_km2 = reg_popn * area_km2) %>%
+  group_by(prac)
+  
 
 # * 2.2. QOF Prevalence ----
 # ``````````````````````````
