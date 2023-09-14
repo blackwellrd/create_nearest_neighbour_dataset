@@ -25,17 +25,6 @@ library(readxl)
 library(sf)
 library(rgdal)
 
-# # Work Laptop
-# gp_population_filename <- 'D:/Data/NHSD/GPREGLSOA/20230701/gp-reg-pat-prac-lsoa-all.csv'
-# epraccur_filename <- 'D:/Data/NHSD/EPRACCUR/20230825/epraccur.csv'
-# pcn_filename <- 'D:/Data/NHSD/EPCN/20230825/ePCN.xlsx'
-# pcn_detail_sheet <- 'PCNDetails'
-# pcn_member_sheet <- 'PCN Core Partner Details'
-# loc_icb_nhser_lookup_filename <- 'D:/Data/OpenGeography/Lookups/LOC22_ICB22_NHSER22/LOC22_ICB22_NHSER22_EN_LU.xlsx'
-# loc_icb_nhser_lookup_sheet <- 'LOC22_ICB22_NHSER22_EN_LU'
-# postcode_lookup_filename <- 'D:/Data/OpenGeography/Lookups/PCD/20230606/ONSPD_MAY_2023_UK.csv'
-
-# Home Desktop
 gp_population_filename <- 'D:/Data/NHSD/GPREGLSOA/20230701/gp-reg-pat-prac-lsoa-all.csv'
 epraccur_filename <- 'D:/Data/NHSD/EPRACCUR/20230825/epraccur.csv'
 pcn_filename <- 'D:/Data/NHSD/EPCN/20230825/ePCN.xlsx'
@@ -43,9 +32,23 @@ pcn_detail_sheet <- 'PCNDetails'
 pcn_member_sheet <- 'PCN Core Partner Details'
 loc_icb_nhser_lookup_filename <- 'D:/Data/OpenGeography/Lookups/LOC22_ICB22_NHSER22/LOC22_ICB22_NHSER22_EN_LU.xlsx'
 loc_icb_nhser_lookup_sheet <- 'LOC22_ICB22_NHSER22_EN_LU'
-postcode_lookup_filename <- 'D:/Data/OpenGeography/Lookups/PCD/20230606/ONSPD_MAY_2023_UK.csv'
+postcode_lookup_filename <- 'D:/Data/OpenGeography/Lookups/PCD/20230823/Data/ONSPD_AUG_2023_UK.csv'
 lsoa11_shapefile_dsn <- 'D:/Data/OpenGeography/Shapefiles/LSOA11'
 lsoa11_shapefile_layer <- 'lsoa11'
+
+age_female_filename <- 'D:/Data/NHSD/GPREGSYOA/20230701/gp-reg-pat-prac-sing-age-female.csv'
+age_male_filename <- 'D:/Data/NHSD/GPREGSYOA/20230701/gp-reg-pat-prac-sing-age-male.csv'
+  
+qof_prevalence_filename <- 'D:/Data/NHSD/QOF/2023/PREVALENCE_2223.csv'
+qof_achievement_ee_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_EAST_OF_ENGLAND_2223.csv'
+qof_achievement_ln_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_LONDON_2223.csv'
+qof_achievement_md_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_MIDLANDS_2223.csv'
+qof_achievement_ne_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_NORTH_EAST_AND_YORKSHIRE_2223.csv'
+qof_achievement_nw_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_NORTH_WEST_2223.csv'
+qof_achievement_se_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_SOUTH_EAST_2223.csv'
+qof_achievement_sw_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_SOUTH_WEST_2223.csv'
+
+
 
 # 1. Process the organisational details ----
 # ******************************************
@@ -102,9 +105,7 @@ df_pcn_members <- read_excel(path = pcn_filename,
 # Add the PCN code to the GP registration data
 df_gp_popn <- df_gp_popn %>% 
   left_join(df_pcn_members, by = 'prac_code') %>%
-  select(1, 5, 2:4)
-
-
+  select(1, 4, 2:3)
 
 # * 1.4. Location to ICB to NHS England Region lookup ----
 # ````````````````````````````````````````````````````````
@@ -158,6 +159,143 @@ df_pcn_index <- df_pcn_detail %>%
 # 2. Process the organisational data ----
 # ***************************************
 
+# * 2.1. Gender and Age ----
+# ``````````````````````````
+df_age <- read.csv(age_female_filename) %>% 
+  select(4, 7, 8) %>% 
+  rename_with(.fn = ~c('prac_code', 'age', 'popn')) %>%
+  mutate(gender = 'females') %>%
+  bind_rows(
+    read.csv(age_male_filename) %>% 
+      select(4, 7, 8) %>% 
+      rename_with(.fn = ~c('prac_code', 'age', 'popn')) %>%
+      mutate(gender = 'males')
+  ) %>%
+  pivot_wider(names_from = gender, values_from = popn) %>%
+  filter(age!='ALL') %>%
+  mutate(persons = females + males,
+         age = as.integer(age)) %>%
+  replace_na(replace = list(age = 95)) %>%
+  left_join(df_pcn_members, by = 'prac_code')
+
+# Create the PCN version of the age data
+df_age_pcn <- df_age %>% 
+  group_by(pcn_code, age) %>%
+    summarise(females = sum(females),
+              males = sum(males),
+              persons = sum(persons),
+              .groups = 'keep') %>%
+  ungroup() %>%
+  pivot_longer(3:5, names_to = 'gender', values_to = 'popn') %>%
+  group_by(pcn_code, gender) %>%
+  reframe(value = c(quantile(rep(age, popn), 
+                               probs = c(0.25, 0.5, 0.75), 
+                               names = TRUE),
+                      popn = sum(popn)))%>%
+  mutate(metric = names(value),
+         value = unname(value)) %>%
+  ungroup() %>%
+  pivot_wider(names_from = 'metric', values_from = 'value') %>%
+  rename_with(.fn = ~c('pcn_code', 'gender', 'q1', 'median', 'q3', 'popn')) %>%
+  mutate(iqr = q3 - q1, .before = popn) %>%
+  pivot_wider(names_from = 'gender', values_from = c('q1','median','q3','iqr','popn'))
+
+# Create the practice version of the age data
+df_age_prac <- df_age %>% 
+  group_by(prac_code, age) %>%
+  summarise(females = sum(females),
+            males = sum(males),
+            persons = sum(persons),
+            .groups = 'keep') %>%
+  ungroup() %>%
+  pivot_longer(3:5, names_to = 'gender', values_to = 'popn') %>%
+  group_by(prac_code, gender) %>%
+  reframe(value = c(quantile(rep(age, popn), 
+                             probs = c(0.25, 0.5, 0.75), 
+                             names = TRUE),
+                    popn = sum(popn)))%>%
+  mutate(metric = names(value),
+         value = unname(value)) %>%
+  ungroup() %>%
+  pivot_wider(names_from = 'metric', values_from = 'value') %>%
+  rename_with(.fn = ~c('prac_code', 'gender', 'q1', 'median', 'q3', 'popn')) %>%
+  mutate(iqr = q3 - q1, .before = popn) %>%
+  pivot_wider(names_from = 'gender', values_from = c('q1','median','q3','iqr','popn'))
+
+# Add the practice age data to the practice index
+df_prac_index <- df_prac_index %>% 
+  left_join(df_age_prac, by = c('org_code' = 'prac_code'))
+
+# * 2.2. QOF Prevalence ----
+# ``````````````````````````
+
+# Load the QOF prevalence data
+df_qof_prev <- read.csv(qof_prevalence_filename) %>%
+  select(1, 2, 3, 5) %>%
+  mutate(GROUP_CODE = tolower(GROUP_CODE))
+
+# Create the PCN version of the QOF prevalence
+df_qof_prev_pcn <- df_qof_prev %>% 
+  left_join(df_pcn_members, by = c('PRACTICE_CODE' = 'prac_code')) %>%
+  group_by(pcn_code, GROUP_CODE) %>%
+  summarise(REGISTER = sum(REGISTER, na.rm = TRUE),
+            PRACTICE_LIST_SIZE = sum(PRACTICE_LIST_SIZE, na.rm = TRUE),
+            .groups = 'keep') %>%
+  ungroup() %>%
+  mutate(PREV = REGISTER / PRACTICE_LIST_SIZE) %>%
+  select(-c('REGISTER', 'PRACTICE_LIST_SIZE')) %>%
+  pivot_wider(names_from = GROUP_CODE, 
+              values_from = PREV)
+
+# Create the practice version of the QOF prevalence
+df_qof_prev_prac <- df_qof_prev %>% 
+  mutate(PREV = REGISTER / PRACTICE_LIST_SIZE) %>%
+  select(-c('REGISTER', 'PRACTICE_LIST_SIZE')) %>%
+  pivot_wider(names_from = GROUP_CODE, 
+              values_from = PREV)
+
+# Add the practice data to the practice index file
+df_prac_index <- df_prac_index %>% 
+  left_join(df_qof_prev_prac, by = c('org_code' = 'PRACTICE_CODE'))
+
+# Add the practice data to the practice index file
+df_prac_index <- df_prac_index %>% 
+  left_join(df_qof_prev_prac, by = c('org_code' = 'PRACTICE_CODE'))
+
+# Tidy up
+rm(list=c('df_qof_prev'))
+
+# 
+
+# * 2.3. QOF Achievement ----
+# ```````````````````````````
+df_qof_achv <- read.csv(qof_achievement_ee_filename) %>%
+  bind_rows(read.csv(qof_achievement_ln_filename)) %>%
+  bind_rows(read.csv(qof_achievement_md_filename)) %>%
+  bind_rows(read.csv(qof_achievement_ne_filename)) %>%
+  bind_rows(read.csv(qof_achievement_nw_filename)) %>%
+  bind_rows(read.csv(qof_achievement_se_filename)) %>%
+  bind_rows(read.csv(qof_achievement_sw_filename)) %>%
+  select(4:7) %>%
+  filter(!MEASURE %in% c('ACHIEVED_POINTS','REGISTER')) %>% 
+  pivot_wider(names_from = 'MEASURE',
+              values_from = 'VALUE') %>%
+  mutate(ACHV = NUMERATOR / DENOMINATOR,
+         ACHV_RAW = NUMERATOR / (DENOMINATOR + PCAS)) %>%
+  select(1:2, 6:7) %>%
+  pivot_wider(names_from = 'INDICATOR_CODE',
+              names_glue = '{INDICATOR_CODE}{.value}',
+              values_from = c('ACHV','ACHV_RAW')) %>%
+  rename_with(.fn = function(x){gsub('ACHV', '', names(.))})
+  
+
+# * 2.4. Workforce ----
+# `````````````````````
+
+
+
+
+
 # * 2.1. Population density ----
 # ``````````````````````````````
 # Load the LSOA 2011 shapefiles
@@ -166,20 +304,39 @@ sf_lsoa11 <- st_read(dsn = lsoa11_shapefile_dsn,
   mutate(area_km2 = Shape__Are / 1e6) %>%
   filter(grepl('^E', LSOA11CD))
 
-df_gp_popn <- df_gp_popn %>% left_join(sf_lsoa11 %>% select(LSOA11CD, area_km2) %>% st_drop_geometry(),
-                         by = c('lsoa11cd' = 'LSOA11CD'))
-
 # Add the population density to the index data frames
-df_gp_popn %>% 
-  mutate(popn_per_km2 = reg_popn * area_km2) %>%
-  group_by(prac)
-  
+df_prac_index <- df_prac_index %>% 
+  left_join(
+    df_gp_popn %>% 
+      mutate(popn_per_km2 = reg_popn * area_km2) %>%
+      group_by(prac_code) %>%
+      summarise(reg_popn = sum(reg_popn, na.rm = TRUE),
+                popn_per_km2 = sum(popn_per_km2, na.rm = TRUE),
+                .groups = 'keep') %>%
+      mutate(popn_per_km2 = popn_per_km2 / reg_popn) %>%
+      ungroup(),
+    by = c('org_code' = 'prac_code')
+  )
 
-# * 2.2. QOF Prevalence ----
-# ``````````````````````````
 
-# * 2.3. QOF Achievement ----
-# ```````````````````````````
+# Test Section ----
+# *****************
 
-# * 2.4. Workforce ----
-# `````````````````````
+library(sf)
+library(rgdal)
+library(leaflet)
+
+sf_prac_index <- st_as_sf(df_prac_index, 
+                          coords = c('longitude','latitude'),
+                          crs = 4326)
+
+palPopnDensity <- colorQuantile(palette = 'RdYlGn', 
+                                domain = sf_prac_index$popn_per_km2)
+
+
+leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(data = sf_prac_index,
+                   label = ~popn_per_km2,
+                   fillColor = ~palPopnDensity(popn_per_km2),
+                   fillOpacity = 0.8)
