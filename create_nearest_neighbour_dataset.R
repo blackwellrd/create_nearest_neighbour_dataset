@@ -48,7 +48,14 @@ qof_achievement_nw_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_NORTH_WEST_222
 qof_achievement_se_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_SOUTH_EAST_2223.csv'
 qof_achievement_sw_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_SOUTH_WEST_2223.csv'
 
+# Practice Payments
+# URL: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-payments-to-general-practice/england-2021-22
+practice_income_filename <- 'D:/Data/NHSD/NHS_PAYMENTS/2022/nhspaymentsgp-21-22-prac-csv-v2.csv'
+pcn_income_filename <- 'D:/Data/NHSD/NHS_PAYMENTS/2022/nhspaymentsgp-21-22-pcn-csv.csv'
 
+# Workforce
+practice_workforce_filename <- 'D:/Data/NHSD/WORKFORCE/20230731/3 General Practice – July 2023 Practice Level - High level.csv'
+pcn_workforce_filename <- 'D:/Data/NHSD/WORKFORCE/20230731/Primary Care Networks - July 2023 Individual Level.csv'
 
 # 1. Process the organisational details ----
 # ******************************************
@@ -226,6 +233,13 @@ df_age_prac <- df_age %>%
 df_prac_index <- df_prac_index %>% 
   left_join(df_age_prac, by = c('org_code' = 'prac_code'))
 
+# Add the PCN age data to the PCN index
+df_pcn_index <- df_pcn_index %>% 
+  left_join(df_age_pcn, by = c('org_code' = 'pcn_code'))
+
+# Tidy up
+rm(list=c('df_age', 'df_age_prac', 'df_age_pcn'))
+
 # * 2.2. QOF Prevalence ----
 # ``````````````````````````
 
@@ -258,14 +272,12 @@ df_qof_prev_prac <- df_qof_prev %>%
 df_prac_index <- df_prac_index %>% 
   left_join(df_qof_prev_prac, by = c('org_code' = 'PRACTICE_CODE'))
 
-# Add the practice data to the practice index file
-df_prac_index <- df_prac_index %>% 
-  left_join(df_qof_prev_prac, by = c('org_code' = 'PRACTICE_CODE'))
+# Add the PCN data to the PCN index file
+df_pcn_index <- df_pcn_index %>% 
+  left_join(df_qof_prev_pcn, by = c('org_code' = 'pcn_code'))
 
 # Tidy up
-rm(list=c('df_qof_prev'))
-
-# 
+rm(list=c('df_qof_prev', 'df_qof_prev_prac', 'df_qof_prev_pcn'))
 
 # * 2.3. QOF Achievement ----
 # ```````````````````````````
@@ -280,17 +292,121 @@ df_qof_achv <- read.csv(qof_achievement_ee_filename) %>%
   filter(!MEASURE %in% c('ACHIEVED_POINTS','REGISTER')) %>% 
   pivot_wider(names_from = 'MEASURE',
               values_from = 'VALUE') %>%
+  left_join(df_pcn_members, by = c('PRACTICE_CODE' = 'prac_code'))
+
+# Create the PCN version of the QOF achievement
+df_qof_achv_pcn <- df_qof_achv %>% 
+  group_by(pcn_code, INDICATOR_CODE) %>%
+  summarise(NUMERATOR = sum(NUMERATOR, na.rm = TRUE),
+            DENOMINATOR = sum(DENOMINATOR, na.rm = TRUE),
+            PCAS = sum(PCAS, na.rm = TRUE),
+            .groups = 'keep') %>%
+  ungroup() %>%
   mutate(ACHV = NUMERATOR / DENOMINATOR,
-         ACHV_RAW = NUMERATOR / (DENOMINATOR + PCAS)) %>%
+         ACHV_RAW = NUMERATOR / (DENOMINATOR + PCAS)) %>% 
   select(1:2, 6:7) %>%
   pivot_wider(names_from = 'INDICATOR_CODE',
               names_glue = '{INDICATOR_CODE}{.value}',
               values_from = c('ACHV','ACHV_RAW')) %>%
-  rename_with(.fn = function(x){gsub('ACHV', '', names(.))})
-  
+  rename_with(.fn = function(x){tolower(gsub('ACHV', '', names(.)))})
+
+# Create the practice version of the QOF achievement
+df_qof_achv_prac <- df_qof_achv %>% 
+  group_by(PRACTICE_CODE, INDICATOR_CODE) %>%
+  summarise(NUMERATOR = sum(NUMERATOR, na.rm = TRUE),
+            DENOMINATOR = sum(DENOMINATOR, na.rm = TRUE),
+            PCAS = sum(PCAS, na.rm = TRUE),
+            .groups = 'keep') %>%
+  ungroup() %>%
+  mutate(ACHV = NUMERATOR / DENOMINATOR,
+         ACHV_RAW = NUMERATOR / (DENOMINATOR + PCAS)) %>% 
+  select(1:2, 6:7) %>%
+  pivot_wider(names_from = 'INDICATOR_CODE',
+              names_glue = '{INDICATOR_CODE}{.value}',
+              values_from = c('ACHV','ACHV_RAW')) %>%
+  rename_with(.fn = function(x){tolower(gsub('ACHV', '', names(.)))})
+
+# Add the practice data to the practice index file
+df_prac_index <- df_prac_index %>% 
+  left_join(df_qof_achv_prac, by = c('org_code' = 'practice_code'))
+
+# Add the PCN data to the PCN index file
+df_pcn_index <- df_pcn_index %>% 
+  left_join(df_qof_achv_pcn, by = c('org_code' = 'pcn_code'))
+
+# Tidy up
+rm(list=c('df_qof_achv', 'df_qof_achv_prac', 'df_qof_achv_pcn'))
 
 # * 2.4. Workforce ----
 # `````````````````````
+
+# Get the practice workforce data
+df_workforce_prac <- read.csv(practice_workforce_filename) %>% 
+  filter(DETAILED_STAFF_ROLE == 'Total' & MEASURE == 'FTE') %>%
+  select(1, 3, 6) %>%
+  rename_with(.fn = ~c('prac_code', 'staff_group', 'fte')) %>% 
+  pivot_wider(names_from = 'staff_group', values_from = 'fte', values_fill= 0) %>%
+  rename_with(.fn = ~c('prac_code', 'admin_fte', 'dpc_fte', 'gp_fte', 'nurse_fte'))
+
+# Get the practice workforce data
+df_workforce_pcn <- read.csv(pcn_workforce_filename) %>% 
+  select(4, 12, 15) %>%
+  rename_with(.fn = ~c('pcn_code', 'staff_group', 'fte')) %>%
+  group_by(pcn_code, staff_group) %>%
+  summarise(fte = sum(fte, na.rm = TRUE),
+            .groups = 'keep') %>%
+  ungroup() %>%
+  pivot_wider(names_from = 'staff_group', values_from = 'fte', values_fill= 0) %>%
+  rename_with(.fn = ~c('pcn_code', 'admin_fte', 'dpc_fte', 'dir_fte', 'gp_fte', 'nurse_fte'))
+
+# Add the practice data to the practice index file
+df_prac_index <- df_prac_index %>% 
+  left_join(df_workforce_prac, by = c('org_code' = 'prac_code'))
+
+# Add the PCN data to the PCN index file
+df_pcn_index <- df_pcn_index %>% 
+  left_join(df_workforce_pcn, by = c('org_code' = 'pcn_code'))
+
+# Tidy up
+rm(list=c('df_workforce_prac', 'df_workforce_pcn'))
+
+
+df_workforce_prac %>% head()
+levels(as.factor(df_workforce_prac$MEASURE))
+# * 2.5. Income ----
+# ``````````````````
+
+# Load the practice NHS payments data
+df_income_prac <- read.csv(practice_income_filename) %>% 
+  select(7, 73) %>% 
+  rename_with(.fn = ~c('prac_code', 'income_per_head_reg_popn'))
+
+# Load the PCN NHS payments data and calculate the PCN funding income per 
+# head of registered popn
+df_income_pcn <- read.csv(pcn_income_filename) %>% 
+  rowwise() %>% 
+  mutate(income = sum(c_across(7:13), na.rm = TRUE)) %>% 
+  select(3, 5, 14) %>% 
+  rename_with(.fn = ~c('pcn_code', 'reg_popn', 'income')) %>%
+  mutate(income_per_head_popn = income / reg_popn) %>% 
+  select(1, 4)
+
+# Load the practice NHS payments data and select the total practice funding 
+# income per head of registered popn
+df_income_prac <- read.csv(practice_income_filename) %>% 
+  select(7, 73) %>% 
+  rename_with(.fn = ~c('prac_code', 'income_per_head_popn'))
+
+# Add the practice data to the practice index file
+df_prac_index <- df_prac_index %>% 
+  left_join(df_income_prac, by = c('org_code' = 'prac_code'))
+
+# Add the PCN data to the PCN index file
+df_pcn_index <- df_pcn_index %>% 
+  left_join(df_income_pcn, by = c('org_code' = 'pcn_code'))
+
+# Tidy up
+rm(list=c('df_income_prac', 'df_income_pcn'))
 
 
 
