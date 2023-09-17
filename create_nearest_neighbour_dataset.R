@@ -24,22 +24,41 @@ library(tidyverse)
 library(readxl)
 library(sf)
 library(rgdal)
+library(spaa)
 
+# Load the functions
+source('geo2org.R', local = TRUE)
+
+# GP Registration - LSOA
 gp_population_filename <- 'D:/Data/NHSD/GPREGLSOA/20230701/gp-reg-pat-prac-lsoa-all.csv'
+
+# Current practices
 epraccur_filename <- 'D:/Data/NHSD/EPRACCUR/20230825/epraccur.csv'
+
+# PCNs and member practices
 pcn_filename <- 'D:/Data/NHSD/EPCN/20230825/ePCN.xlsx'
 pcn_detail_sheet <- 'PCNDetails'
 pcn_member_sheet <- 'PCN Core Partner Details'
+
+# Location to ICB to NHSE region lookup
 loc_icb_nhser_lookup_filename <- 'D:/Data/OpenGeography/Lookups/LOC22_ICB22_NHSER22/LOC22_ICB22_NHSER22_EN_LU.xlsx'
 loc_icb_nhser_lookup_sheet <- 'LOC22_ICB22_NHSER22_EN_LU'
+
+# Postcode lookup
 postcode_lookup_filename <- 'D:/Data/OpenGeography/Lookups/PCD/20230823/Data/ONSPD_AUG_2023_UK.csv'
+
+# LSOA 2011 Shapefile
 lsoa11_shapefile_dsn <- 'D:/Data/OpenGeography/Shapefiles/LSOA11'
 lsoa11_shapefile_layer <- 'lsoa11'
 
+# GP Registrations - Age and Gender
 age_female_filename <- 'D:/Data/NHSD/GPREGSYOA/20230701/gp-reg-pat-prac-sing-age-female.csv'
 age_male_filename <- 'D:/Data/NHSD/GPREGSYOA/20230701/gp-reg-pat-prac-sing-age-male.csv'
   
+# QOF Prevalence
 qof_prevalence_filename <- 'D:/Data/NHSD/QOF/2023/PREVALENCE_2223.csv'
+
+# QOF Achievement
 qof_achievement_ee_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_EAST_OF_ENGLAND_2223.csv'
 qof_achievement_ln_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_LONDON_2223.csv'
 qof_achievement_md_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_MIDLANDS_2223.csv'
@@ -57,6 +76,19 @@ pcn_income_filename <- 'D:/Data/NHSD/NHS_PAYMENTS/2022/nhspaymentsgp-21-22-pcn-c
 practice_workforce_filename <- 'D:/Data/NHSD/WORKFORCE/20230731/3 General Practice – July 2023 Practice Level - High level.csv'
 pcn_workforce_filename <- 'D:/Data/NHSD/WORKFORCE/20230731/Primary Care Networks - July 2023 Individual Level.csv'
 
+# Census 2021 ethnicity
+ethnicity_filename <- 'D:/Data/ONS/Census/2021/Topic_Summaries/census2021-ts021/census2021-ts021-lsoa.csv'
+
+# IMD data
+imd_filename <- 'D:/Data/GOV.UK/IMD/2019/File_7_-_All_IoD2019_Scores__Ranks__Deciles_and_Population_Denominators_3.csv'
+imd_underlying_indicators_filename <- 'D:/Data/GOV.UK/IMD/2019/File_8_-_IoD2019_Underlying_Indicators.xlsx'
+imd_underlying_indicators_income_sheet <- 'IoD2019 Income Domain'
+imd_underlying_indicators_employment_sheet <- 'IoD2019 Employment Domain'
+imd_underlying_indicators_education_sheet <- 'IoD2019 Education Domain'
+imd_underlying_indicators_health_sheet <- 'IoD2019 Health Domain'
+imd_underlying_indicators_barriers_sheet <- 'IoD2019 Barriers Domain'
+imd_underlying_indicators_environment_sheet <- 'IoD2019 Living Env Domain'
+  
 # 1. Process the organisational details ----
 # ******************************************
 
@@ -370,9 +402,6 @@ df_pcn_index <- df_pcn_index %>%
 # Tidy up
 rm(list=c('df_workforce_prac', 'df_workforce_pcn'))
 
-
-df_workforce_prac %>% head()
-levels(as.factor(df_workforce_prac$MEASURE))
 # * 2.5. Income ----
 # ``````````````````
 
@@ -408,11 +437,10 @@ df_pcn_index <- df_pcn_index %>%
 # Tidy up
 rm(list=c('df_income_prac', 'df_income_pcn'))
 
+# 3. Process the geographical data ----
+# *************************************
 
-
-
-
-# * 2.1. Population density ----
+# * 3.1. Population density ----
 # ``````````````````````````````
 # Load the LSOA 2011 shapefiles
 sf_lsoa11 <- st_read(dsn = lsoa11_shapefile_dsn,
@@ -420,39 +448,266 @@ sf_lsoa11 <- st_read(dsn = lsoa11_shapefile_dsn,
   mutate(area_km2 = Shape__Are / 1e6) %>%
   filter(grepl('^E', LSOA11CD))
 
-# Add the population density to the index data frames
+# Calculate the population density of each LSOA using the GP registration data and
+# add the area of the lsoa
+df_popn_density <- df_gp_popn %>% 
+  group_by(lsoa11cd) %>%
+  summarise(total_popn = sum(reg_popn),
+            .groups = 'keep') %>%
+  ungroup() %>%
+  left_join(sf_lsoa11 %>% st_drop_geometry() %>% select(LSOA11CD, area_km2),
+            by = c('lsoa11cd' = 'LSOA11CD')) %>% 
+  mutate(popn_per_km2 = total_popn / area_km2)
+
+# Calculate the population weighted population density for PCNs
+df_popn_density_pcn <- df_gp_popn %>% 
+  group_by(pcn_code, lsoa11cd) %>% 
+  summarise(reg_popn = sum(reg_popn),
+            .groups = 'keep') %>%
+  ungroup() %>%
+  left_join(df_popn_density, by = 'lsoa11cd') %>%
+  mutate(popn_per_km2 = popn_per_km2 * reg_popn) %>%
+  group_by(pcn_code) %>%
+  summarise(reg_popn = sum(reg_popn),
+            popn_per_km2 = sum(popn_per_km2),
+            .groups = 'keep') %>%
+  ungroup() %>%
+  mutate(popn_per_km2 = popn_per_km2 / reg_popn) %>%
+  select(-reg_popn)
+
+# Calculate the population weighted population density for practices
+df_popn_density_prac <- df_gp_popn %>% 
+  group_by(prac_code, lsoa11cd) %>% 
+  summarise(reg_popn = sum(reg_popn),
+            .groups = 'keep') %>%
+  ungroup() %>%
+  left_join(df_popn_density, by = 'lsoa11cd') %>%
+  mutate(popn_per_km2 = popn_per_km2 * reg_popn) %>%
+  group_by(prac_code) %>%
+  summarise(reg_popn = sum(reg_popn),
+            popn_per_km2 = sum(popn_per_km2),
+            .groups = 'keep') %>%
+  ungroup() %>%
+  mutate(popn_per_km2 = popn_per_km2 / reg_popn) %>%
+  select(-reg_popn)
+
+# Add the practice data to the practice index file
 df_prac_index <- df_prac_index %>% 
-  left_join(
-    df_gp_popn %>% 
-      mutate(popn_per_km2 = reg_popn * area_km2) %>%
-      group_by(prac_code) %>%
-      summarise(reg_popn = sum(reg_popn, na.rm = TRUE),
-                popn_per_km2 = sum(popn_per_km2, na.rm = TRUE),
-                .groups = 'keep') %>%
-      mutate(popn_per_km2 = popn_per_km2 / reg_popn) %>%
-      ungroup(),
-    by = c('org_code' = 'prac_code')
+  left_join(df_popn_density_prac, by = c('org_code' = 'prac_code'))
+
+# Add the PCN data to the PCN index file
+df_pcn_index <- df_pcn_index %>% 
+  left_join(df_popn_density_pcn, by = c('org_code' = 'pcn_code'))
+
+# Tidy up
+rm(list=c('df_popn_density_prac', 'df_popn_density_pcn'))
+
+# * 3.2. Census ethnicity data ----
+# `````````````````````````````````
+
+# Get the census ethnicity
+df_ethnicity <- read.csv(ethnicity_filename) %>% 
+  select(3, 5, 11, 15, 20, 26, 4) %>% 
+  rename_with(.fn = ~c('lsoa21cd', 'asian', 'black', 'mixed', 'white', 'other', 'total_popn'))
+
+# Load the 2011 to 2021 LSOA lookup
+df_lsoa11_lsoa21 <- read.csv('D:/Data/OpenGeography/Lookups/LSOA11_LSOA21/LSOA_(2011)_to_LSOA_(2021)_to_Local_Authority_District_(2022)_Lookup_for_England_and_Wales.csv') %>%
+  select(1, 3, 5) %>% 
+  rename_with(.fn = function(x){c('lsoa11cd', 'lsoa21cd', 'chgind')}) %>%
+  # Ignore the 'complex' mappings keeping the complex unchanged 'XU' mappings
+  filter(!chgind=='X')
+
+# Map ethnicity to 2011 LSOAs and calculate proportions
+df_ethnicity_2011 <- df_lsoa11_lsoa21 %>% 
+  select(-chgind) %>% 
+  left_join(df_ethnicity, by = 'lsoa21cd') %>% 
+  group_by(lsoa11cd) %>%
+  summarise(across(.cols = 2:7, .fns = sum), .groups = 'keep') %>%
+  ungroup() %>%
+  mutate(across(.cols = 2:6, .fns = \(x) x / total_popn)) %>%
+  select(-total_popn)
+
+# Create the practice level ethnicity
+df_ethnicity_prac <- fnGeo2Org(df_geo = df_ethnicity_2011 %>% 
+                                 mutate(geo_code = lsoa11cd, .keep = 'unused', .before = 1),
+                               df_weighting = df_gp_popn %>% 
+                                 transmute(org_code = prac_code, 
+                                           geo_code = lsoa11cd,
+                                           weighting = reg_popn))
+
+# Create the PCN level ethnicity
+df_ethnicity_pcn <- fnGeo2Org(df_geo = df_ethnicity_2011 %>% 
+                                mutate(geo_code = lsoa11cd, .keep = 'unused', .before = 1),
+                              df_weighting = df_gp_popn %>% 
+                                group_by(pcn_code, lsoa11cd) %>%
+                                summarise(reg_popn = sum(reg_popn, na.rm = TRUE),
+                                          .groups = 'keep') %>%
+                                ungroup() %>%
+                                transmute(org_code = pcn_code, 
+                                          geo_code = lsoa11cd,
+                                          weighting = reg_popn))
+
+# Add the practice data to the practice index file
+df_prac_index <- df_prac_index %>% 
+  left_join(df_ethnicity_prac, by = c('org_code' = 'org_code'))
+
+# Add the PCN data to the PCN index file
+df_pcn_index <- df_pcn_index %>% 
+  left_join(df_ethnicity_pcn, by = c('org_code' = 'org_code'))
+
+# Tidy up
+rm(list=c('df_ethnicity_prac', 'df_ethnicity_pcn'))
+
+# * 3.3. Indices of multiple deprivation scores ----
+# ``````````````````````````````````````````````````
+
+# Get the IMD domain data selecting only the score data
+df_imd_domains <- read.csv(imd_filename) %>% 
+  select(1, contains('score')) %>%
+  rename_with(.fn = ~c('lsoa11cd', 'imd', 'income_domain', 'employment_domain', 'education_domain',
+                       'health_domain', 'crime_domain', 'housing_and_services_domain', 'environment_domain',
+                       'idaci_subdomain', 'idaopi_subdomain', 'children_edu_subdomain', 'adult_edu_subdomain', 
+                       'geographical_barriers_subdomain', 'wider_barriers_subdomain', 'indoors_subdomain', 'outdoors_subdomain'))
+
+# Get the IMD underlying indicator data
+df_imd_underlying_indicators_income <- read_excel(path = imd_underlying_indicators_filename,
+                                                  sheet = imd_underlying_indicators_income_sheet) %>% 
+  select(1, 5:7) %>%
+  rename_with(.fn = ~c('lsoa11cd', 'income_numerator', 'idaci_numerator', 'idopi_numerator'))
+
+df_imd_underlying_indicators_employment <- read_excel(path = imd_underlying_indicators_filename,
+                                                      sheet = imd_underlying_indicators_employment_sheet) %>%
+  select(1, 5) %>%
+  rename_with(.fn = ~c('lsoa11cd', 'employment_numerator'))
+
+df_imd_underlying_indicators_education <- read_excel(path = imd_underlying_indicators_filename,
+                                                     sheet = imd_underlying_indicators_education_sheet) %>% 
+  select(1, 5:7) %>%
+  rename_with(.fn = ~c('lsoa11cd', 'post_16_education_numerator', 'entry_to_higher_edu_numerator', 'adult_skills_numerator'))
+
+df_imd_underlying_indicators_health <- read_excel(path = imd_underlying_indicators_filename,
+                                                  sheet = imd_underlying_indicators_health_sheet) %>% 
+  select(1, 5:8) %>%
+  rename_with(.fn = ~c('lsoa11cd', 'year_of_life_lost', 'comparative_illness_and_disability', 'acute_morbidity', 'mood_and_anxiety_disorders'))
+
+df_imd_underlying_indicators_barriers <- read_excel(path = imd_underlying_indicators_filename,
+                                                    sheet = imd_underlying_indicators_barriers_sheet) %>% 
+  select(1, 5:13) %>%
+  rename_with(.fn = ~c('lsoa11cd', 'post_office_distance', 'primary_school_distance', 'general_store_distance',
+                       'gp_distance', 'household_overcrowding', 'homelessness_indicator', 'owner_occupation_affordability',
+                       'private_rental_affordability', 'housing_affordability'))
+
+df_imd_underlying_indicators_environment <- read_excel(path = imd_underlying_indicators_filename,
+                                                       sheet = imd_underlying_indicators_environment_sheet) %>% 
+  select(1, 5:12) %>%
+  rename_with(.fn = ~c('lsoa11cd', 'poor_quality_housing', 'housing_without_central_heating', 'traffic_accidents', 
+                       'nitrogen_dioxide', 'benzene', 'suplhur_dioxide', 'particulates', 'air_quality'))
+
+# Combine all the underlying indicators and the domain data
+df_imd <- df_imd_domains %>%
+  left_join(df_imd_underlying_indicators_income, by = 'lsoa11cd') %>% 
+  left_join(df_imd_underlying_indicators_employment, by = 'lsoa11cd') %>% 
+  left_join(df_imd_underlying_indicators_education, by = 'lsoa11cd') %>% 
+  left_join(df_imd_underlying_indicators_health, by = 'lsoa11cd') %>% 
+  left_join(df_imd_underlying_indicators_barriers, by = 'lsoa11cd') %>% 
+  left_join(df_imd_underlying_indicators_environment, by = 'lsoa11cd')
+
+# Create the practice level IMD
+df_imd_prac <- fnGeo2Org(df_geo = df_imd %>% 
+                           mutate(geo_code = lsoa11cd, .keep = 'unused', .before = 1),
+                         df_weighting = df_gp_popn %>% 
+                           transmute(org_code = prac_code, 
+                                     geo_code = lsoa11cd,
+                                     weighting = reg_popn))
+
+# Create the PCN level ethnicity
+df_imd_pcn <- fnGeo2Org(df_geo = df_imd %>% 
+                          mutate(geo_code = lsoa11cd, .keep = 'unused', .before = 1),
+                        df_weighting = df_gp_popn %>% 
+                          group_by(pcn_code, lsoa11cd) %>%
+                          summarise(reg_popn = sum(reg_popn, na.rm = TRUE),
+                                    .groups = 'keep') %>%
+                          ungroup() %>%
+                          transmute(org_code = pcn_code, 
+                                    geo_code = lsoa11cd,
+                                    weighting = reg_popn))
+
+# Add the practice data to the practice index file
+df_prac_index <- df_prac_index %>% 
+  left_join(df_imd_prac, by = c('org_code' = 'org_code'))
+
+# Add the PCN data to the PCN index file
+df_pcn_index <- df_pcn_index %>% 
+  left_join(df_imd_pcn, by = c('org_code' = 'org_code'))
+
+# Tidy up
+rm(list=c('df_imd_domains',
+          'df_imd_underlying_indicators_income', 'df_imd_underlying_indicators_employment', 'df_imd_underlying_indicators_education',
+          'df_imd_underlying_indicators_health', 'df_imd_underlying_indicators_barriers', 'df_imd_underlying_indicators_environment',
+          'df_imd_prac', 'df_imd_pcn'))
+
+# 4. Output the unprocessed data ----
+# ***********************************
+
+df_field_list <- read.csv('./output/field_list.csv')
+
+dir.create('./output', showWarnings = FALSE, recursive = TRUE)
+write.csv(df_prac_index, './output/practice_level_nn_data.csv', row.names = FALSE)
+write.csv(df_pcn_index, './output/pcn_level_nn_data.csv', row.names = FALSE)
+save(list=c('df_field_list', 'df_prac_index', 'df_pcn_index'), file = './output/nn_data.RObj')
+
+# 5. Create the distance matrix ----
+# **********************************
+
+prac_dist_matrix <- dist(scale(df_prac_index[,c(10:45, 152:206)]))
+
+df_prac_distances <- dist2list(prac_dist_matrix) %>% 
+  filter(col!=row) %>%
+  transmute(
+    orig = df_prac_index$org_code[row],
+    dest = df_prac_index$org_code[col],
+    distance = value
   )
 
+pcn_dist_matrix <- dist(scale(df_pcn_index[,c(10:45, 152:207)]))
 
-# Test Section ----
-# *****************
+df_pcn_distances <- dist2list(pcn_dist_matrix) %>% 
+  filter(col!=row) %>%
+  transmute(
+    orig = df_pcn_index$org_code[row],
+    dest = df_pcn_index$org_code[col],
+    distance = value
+  )
 
-library(sf)
-library(rgdal)
-library(leaflet)
+dir.create('./output', showWarnings = FALSE, recursive = TRUE)
+write.csv(df_prac_distances, './output/practice_dist_matrix.csv', row.names = FALSE)
+write.csv(df_pcn_distances, './output/pcn_dist_matrix.csv', row.names = FALSE)
+save(list=c('df_prac_distances', 'df_pcn_distances'), file = './output/dist_data.RObj')
 
-sf_prac_index <- st_as_sf(df_prac_index, 
-                          coords = c('longitude','latitude'),
-                          crs = 4326)
+# 6. Create the clusters ----
+# ***************************
 
-palPopnDensity <- colorQuantile(palette = 'RdYlGn', 
-                                domain = sf_prac_index$popn_per_km2)
+# K-means clustering set-up
+kmeans_input <- df_prac_index %>% select(c(10:45, 152:206))
+kmeans_input[is.na(kmeans_input)] <- 0
+kmeans_input <- scale(kmeans_input, center = TRUE, scale = TRUE)
+
+factoextra::fviz_nbclust(kmeans_input, kmeans, method = "wss", iter.max = 20)
+factoextra::fviz_nbclust(kmeans_input, kmeans, method = "silhouette", iter.max = 20) + labs(subtitle = "Silhouette method")
+res_kmeans <- kmeans(kmeans_input, centers = 7, iter.max = 20, nstart = 20)
+df_prac_index$cluster <- res_kmeans$cluster
+
+# K-means clustering set-up
+kmeans_input <- df_pcn_index %>% select(c(10:45, 152:207))
+kmeans_input[is.na(kmeans_input)] <- 0
+kmeans_input <- scale(kmeans_input, center = TRUE, scale = TRUE)
+
+factoextra::fviz_nbclust(kmeans_input, kmeans, method = "wss", iter.max = 20)
+factoextra::fviz_nbclust(kmeans_input, kmeans, method = "silhouette", iter.max = 20) + labs(subtitle = "Silhouette method")
+res_kmeans <- kmeans(kmeans_input, centers = 5, iter.max = 20, nstart = 20)
+df_pcn_index$cluster <- res_kmeans$cluster
 
 
-leaflet() %>%
-  addTiles() %>%
-  addCircleMarkers(data = sf_prac_index,
-                   label = ~popn_per_km2,
-                   fillColor = ~palPopnDensity(popn_per_km2),
-                   fillOpacity = 0.8)
+# 7. Map ----
+# ***********
+
