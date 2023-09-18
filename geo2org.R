@@ -23,7 +23,7 @@ fnGeo2Org <- function(df_geo, df_weighting){
       # Group the weighting data by the organisation and then join to the data
       df_weighting %>% 
         group_by(org_code) %>% 
-        summarise(weighting = sum(weighting), .groups = 'keep') %>%
+        summarise(weighting = sum(weighting, na.rm = TRUE), .groups = 'keep') %>%
         ungroup(),
       by = c('org_code' = 'org_code')
     ) %>% 

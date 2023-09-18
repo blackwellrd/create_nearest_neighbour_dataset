@@ -22,9 +22,11 @@
 
 library(tidyverse)
 library(readxl)
+library(leaflet)
 library(sf)
 library(rgdal)
 library(spaa)
+library(factoextra)
 
 # Load the functions
 source('geo2org.R', local = TRUE)
@@ -573,17 +575,23 @@ df_imd_domains <- read.csv(imd_filename) %>%
 df_imd_underlying_indicators_income <- read_excel(path = imd_underlying_indicators_filename,
                                                   sheet = imd_underlying_indicators_income_sheet) %>% 
   select(1, 5:7) %>%
-  rename_with(.fn = ~c('lsoa11cd', 'income_numerator', 'idaci_numerator', 'idopi_numerator'))
+  rename_with(.fn = ~c('lsoa11cd', 'income_numerator', 'idaci_numerator', 'idopi_numerator')) %>%
+  # Replace any missing values with zero
+  replace_na(list(income_numerator = 0, idaci_numerator = 0, idopi_numerator = 0))
 
 df_imd_underlying_indicators_employment <- read_excel(path = imd_underlying_indicators_filename,
                                                       sheet = imd_underlying_indicators_employment_sheet) %>%
   select(1, 5) %>%
-  rename_with(.fn = ~c('lsoa11cd', 'employment_numerator'))
+  rename_with(.fn = ~c('lsoa11cd', 'employment_numerator')) %>%
+  # Replace any missing values with zero
+  replace_na(list(employment_numerator = 0))
 
 df_imd_underlying_indicators_education <- read_excel(path = imd_underlying_indicators_filename,
                                                      sheet = imd_underlying_indicators_education_sheet) %>% 
   select(1, 5:7) %>%
-  rename_with(.fn = ~c('lsoa11cd', 'post_16_education_numerator', 'entry_to_higher_edu_numerator', 'adult_skills_numerator'))
+  rename_with(.fn = ~c('lsoa11cd', 'post_16_education_numerator', 'entry_to_higher_edu_numerator', 'adult_skills_numerator')) %>%
+  # Replace any missing values with zero
+  replace_na(list(entry_to_higher_edu_numerator = 0))
 
 df_imd_underlying_indicators_health <- read_excel(path = imd_underlying_indicators_filename,
                                                   sheet = imd_underlying_indicators_health_sheet) %>% 
@@ -711,3 +719,150 @@ df_pcn_index$cluster <- res_kmeans$cluster
 # 7. Map ----
 # ***********
 
+# load('./output/nn_data.RObj')
+# load('./output/dist_data.RObj')
+
+palCluster <- colorFactor(palette = 'Set1', domain = df_prac_index$cluster)
+labels = 
+
+prac_map <- leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(data = df_prac_index %>% 
+                     select(org_code, org_name, postcode, popn_persons, 
+                            icb_code, icb_name, 
+                            nhser_code, nhser_name,
+                            latitude, longitude,
+                            cluster) %>%
+                     filter(cluster == 1),
+                   weight = 1,
+                   radius = 5,
+                   color = 'black',
+                   fillColor = ~palCluster(cluster),
+                   fillOpacity = 0.8,
+                   popup = ~paste0(
+                     'Practice: ', org_name, ' - [', org_code, ']<br>',
+                     'ICB: ', icb_name, ' - [', icb_code, ']<br>',
+                     'Region: ', nhser_name, ' - [', nhser_code, ']<br>',
+                     'Popn: ', prettyNum(popn_persons, big.mark = ',')
+                   ),
+                   group = '1') %>%
+  addCircleMarkers(data = df_prac_index %>% 
+                     select(org_code, org_name, postcode, popn_persons, 
+                            icb_code, icb_name, 
+                            nhser_code, nhser_name,
+                            latitude, longitude,
+                            cluster) %>%
+                     filter(cluster == 2),
+                   weight = 1,
+                   radius = 5,
+                   color = 'black',
+                   fillColor = ~palCluster(cluster),
+                   fillOpacity = 0.8,
+                   popup = ~paste0(
+                     'Practice: ', org_name, ' - [', org_code, ']<br>',
+                     'ICB: ', icb_name, ' - [', icb_code, ']<br>',
+                     'Region: ', nhser_name, ' - [', nhser_code, ']<br>',
+                     'Popn: ', prettyNum(popn_persons, big.mark = ',')
+                   ),
+                   group = '2') %>%
+  addCircleMarkers(data = df_prac_index %>% 
+                     select(org_code, org_name, postcode, popn_persons, 
+                            icb_code, icb_name, 
+                            nhser_code, nhser_name,
+                            latitude, longitude,
+                            cluster) %>%
+                     filter(cluster == 3),
+                   weight = 1,
+                   radius = 5,
+                   color = 'black',
+                   fillColor = ~palCluster(cluster),
+                   fillOpacity = 0.8,
+                   popup = ~paste0(
+                     'Practice: ', org_name, ' - [', org_code, ']<br>',
+                     'ICB: ', icb_name, ' - [', icb_code, ']<br>',
+                     'Region: ', nhser_name, ' - [', nhser_code, ']<br>',
+                     'Popn: ', prettyNum(popn_persons, big.mark = ',')
+                   ),
+                   group = '3') %>%
+  addCircleMarkers(data = df_prac_index %>% 
+                     select(org_code, org_name, postcode, popn_persons, 
+                            icb_code, icb_name, 
+                            nhser_code, nhser_name,
+                            latitude, longitude,
+                            cluster) %>%
+                     filter(cluster == 4),
+                   weight = 1,
+                   radius = 5,
+                   color = 'black',
+                   fillColor = ~palCluster(cluster),
+                   fillOpacity = 0.8,
+                   popup = ~paste0(
+                     'Practice: ', org_name, ' - [', org_code, ']<br>',
+                     'ICB: ', icb_name, ' - [', icb_code, ']<br>',
+                     'Region: ', nhser_name, ' - [', nhser_code, ']<br>',
+                     'Popn: ', prettyNum(popn_persons, big.mark = ',')
+                   ),
+                   group = '4') %>%
+  addCircleMarkers(data = df_prac_index %>% 
+                     select(org_code, org_name, postcode, popn_persons, 
+                            icb_code, icb_name, 
+                            nhser_code, nhser_name,
+                            latitude, longitude,
+                            cluster) %>%
+                     filter(cluster == 5),
+                   weight = 1,
+                   radius = 5,
+                   color = 'black',
+                   fillColor = ~palCluster(cluster),
+                   fillOpacity = 0.8,
+                   popup = ~paste0(
+                     'Practice: ', org_name, ' - [', org_code, ']<br>',
+                     'ICB: ', icb_name, ' - [', icb_code, ']<br>',
+                     'Region: ', nhser_name, ' - [', nhser_code, ']<br>',
+                     'Popn: ', prettyNum(popn_persons, big.mark = ',')
+                   ),
+                   group = '5') %>%
+  addCircleMarkers(data = df_prac_index %>% 
+                     select(org_code, org_name, postcode, popn_persons, 
+                            icb_code, icb_name, 
+                            nhser_code, nhser_name,
+                            latitude, longitude,
+                            cluster) %>%
+                     filter(cluster == 6),
+                   weight = 1,
+                   radius = 5,
+                   color = 'black',
+                   fillColor = ~palCluster(cluster),
+                   fillOpacity = 0.8,
+                   popup = ~paste0(
+                     'Practice: ', org_name, ' - [', org_code, ']<br>',
+                     'ICB: ', icb_name, ' - [', icb_code, ']<br>',
+                     'Region: ', nhser_name, ' - [', nhser_code, ']<br>',
+                     'Popn: ', prettyNum(popn_persons, big.mark = ',')
+                   ),
+                   group = '6') %>%
+  addCircleMarkers(data = df_prac_index %>% 
+                     select(org_code, org_name, postcode, popn_persons, 
+                            icb_code, icb_name, 
+                            nhser_code, nhser_name,
+                            latitude, longitude,
+                            cluster) %>%
+                     filter(cluster == 7),
+                   weight = 1,
+                   radius = 5,
+                   color = 'black',
+                   fillColor = ~palCluster(cluster),
+                   fillOpacity = 0.8,
+                   popup = ~paste0(
+                     'Practice: ', org_name, ' - [', org_code, ']<br>',
+                     'ICB: ', icb_name, ' - [', icb_code, ']<br>',
+                     'Region: ', nhser_name, ' - [', nhser_code, ']<br>',
+                     'Popn: ', prettyNum(popn_persons, big.mark = ',')
+                   ),
+                   group = '7') %>%
+  addControl(
+    html = 'Source: Office for National Statistics licensed under the Open Government Licence v.3.0<br>Contains OS data © Crown copyright and database right [2023]',
+    position = "bottomleft", layerId = NULL, className = "info legend"
+  ) %>%
+  addLayersControl(overlayGroups = c('1','2','3','4','5','6','7'))
+prac_map
