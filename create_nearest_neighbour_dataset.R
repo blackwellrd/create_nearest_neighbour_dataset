@@ -28,9 +28,6 @@ library(rgdal)
 library(spaa)
 library(factoextra)
 
-# Load the functions
-source('geo2org.R', local = TRUE)
-
 # GP Registration - LSOA
 gp_population_filename <- 'D:/Data/NHSD/GPREGLSOA/20230701/gp-reg-pat-prac-lsoa-all.csv'
 
@@ -79,7 +76,7 @@ practice_workforce_filename <- 'D:/Data/NHSD/WORKFORCE/20230731/3 General Practi
 pcn_workforce_filename <- 'D:/Data/NHSD/WORKFORCE/20230731/Primary Care Networks - July 2023 Individual Level.csv'
 
 # Census 2021 ethnicity
-ethnicity_filename <- 'D:/Data/ONS/Census/2021/Topic_Summaries/census2021-ts021/census2021-ts021-lsoa.csv'
+ethnicity_filename <- 'D:/Data/NOMIS/Census_2021/TS/census2021-ts021/census2021-ts021-lsoa.csv'
 
 # IMD data
 imd_filename <- 'D:/Data/GOV.UK/IMD/2019/File_7_-_All_IoD2019_Scores__Ranks__Deciles_and_Population_Denominators_3.csv'
@@ -90,6 +87,33 @@ imd_underlying_indicators_education_sheet <- 'IoD2019 Education Domain'
 imd_underlying_indicators_health_sheet <- 'IoD2019 Health Domain'
 imd_underlying_indicators_barriers_sheet <- 'IoD2019 Barriers Domain'
 imd_underlying_indicators_environment_sheet <- 'IoD2019 Living Env Domain'
+
+# Declare the geographical to organisational data function
+fnGeo2Org <- function(df_geo, df_weighting){
+  # The data frame df_geo should contain the geographical based data, and the data frame 
+  # df_weighting should contain the weighting value mapped to organisation and geography
+  # Fields are as follows; [df_geo] geo_code, metric, value and [df_weighting] org_code, geo_code, weighting
+  df_result <- df_weighting %>% 
+    # Join the weighting data frame and geographic based data
+    inner_join(df_geo, by = c('geo_code' = 'geo_code')) %>% 
+    # Weight the geographical data fields by multiplying by the weighting value
+    mutate(weighted_value = weighting * value,
+           weighting = ifelse(is.na(value), NA, weighting)) %>%
+    # Group by the organisation code...
+    group_by(org_code, metric) %>% 
+    # and summarise the weighted_value and weighting
+    summarise(weighted_value = sum(weighted_value, na.rm = TRUE),
+              weighting = sum(weighting, na.rm = TRUE),
+              .groups = 'keep') %>%
+    ungroup() %>%
+    # Calculate the final metric_value by dividing the weighted_value by the weighting
+    mutate(value = weighted_value / weighting) %>%
+    # Drop the unnecessary fields
+    select(-c(weighted_value, weighting))
+  # Return the organisational data
+  return(df_result)
+}
+
   
 # 1. Process the organisational details ----
 # ******************************************
@@ -442,6 +466,26 @@ rm(list=c('df_income_prac', 'df_income_pcn'))
 # 3. Process the geographical data ----
 # *************************************
 
+# * 3.0. Create the weighting data frames ----
+# ````````````````````````````````````````````
+
+# Practice level weighting
+df_weighting_prac <- df_gp_popn %>% 
+  transmute(org_code = prac_code, 
+            geo_code = lsoa11cd, 
+            weighting = reg_popn)
+
+# PCN level weighting
+df_weighting_pcn <- df_gp_popn %>% 
+  transmute(org_code = pcn_code, 
+            geo_code = lsoa11cd, 
+            weighting = reg_popn) %>%
+  group_by(org_code, geo_code) %>%
+  summarise(weighting = sum(weighting, na.rm = TRUE),
+            .groups = 'keep') %>%
+  ungroup()
+
+
 # * 3.1. Population density ----
 # ``````````````````````````````
 # Load the LSOA 2011 shapefiles
@@ -459,7 +503,19 @@ df_popn_density <- df_gp_popn %>%
   ungroup() %>%
   left_join(sf_lsoa11 %>% st_drop_geometry() %>% select(LSOA11CD, area_km2),
             by = c('lsoa11cd' = 'LSOA11CD')) %>% 
-  mutate(popn_per_km2 = total_popn / area_km2)
+  mutate(popn_per_km2 = total_popn / area_km2) %>%
+  transmute(geo_code = lsoa11cd, metric = 'popn_per_km2', value = popn_per_km2)
+
+df_popn_density_prac = fnGeo2Org(df_geo = df_popn_density, df_weighting = df_weighting_prac) %>%
+  pivot_wider(names_from = 'metric', values_from = 'value')
+# Test L83066
+df_popn_density_prac %>% filter(org_code == 'L83066')
+df_popn_density_pcn = fnGeo2Org(df_geo = df_popn_density, df_weighting = df_weighting_pcn)
+# Test U06387
+df_popn_density_pcn %>% filter(org_code == 'U06387')
+
+######################################################################################
+
 
 # Calculate the population weighted population density for PCNs
 df_popn_density_pcn <- df_gp_popn %>% 
@@ -866,3 +922,4 @@ prac_map <- leaflet() %>%
   ) %>%
   addLayersControl(overlayGroups = c('1','2','3','4','5','6','7'))
 prac_map
+
