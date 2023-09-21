@@ -95,7 +95,7 @@ fnGeo2Org <- function(df_geo, df_weighting){
   # Fields are as follows; [df_geo] geo_code, metric, value and [df_weighting] org_code, geo_code, weighting
   df_result <- df_weighting %>% 
     # Join the weighting data frame and geographic based data
-    inner_join(df_geo, by = c('geo_code' = 'geo_code')) %>% 
+    inner_join(df_geo, by = c('geo_code' = 'geo_code'), relationship = 'many-to-many') %>% 
     # Weight the geographical data fields by multiplying by the weighting value
     mutate(weighted_value = weighting * value,
            weighting = ifelse(is.na(value), NA, weighting)) %>%
@@ -112,6 +112,18 @@ fnGeo2Org <- function(df_geo, df_weighting){
     select(-c(weighted_value, weighting))
   # Return the organisational data
   return(df_result)
+}
+
+# Used to check for duplicate field names (may need to use tolower before checking)
+fnCheckFieldNames <- function(df_add, df_exist){
+  # Get the field names
+  additional_names <- names(df_add)
+  existing_names <- names(df_exist)
+  # Remove the org_code name from the additional list as we
+  # know this is a required duplicate for joining purposes
+  additional_names <- additional_names[additional_names!='org_code']
+  # Loop through the field names and test for matches
+  return(sum(unlist(lapply(additional_names, function(x){existing_names==x})))==0)
 }
 
   
@@ -463,6 +475,11 @@ df_pcn_index <- df_pcn_index %>%
 # Tidy up
 rm(list=c('df_income_prac', 'df_income_pcn'))
 
+# Tidy up the organisational data frames
+rm(list=c('df_loc_icb_nher_lu', 'df_prac',
+          'df_pcn_detail', 'df_pcn_members',
+          'df_postcode'))
+
 # 3. Process the geographical data ----
 # *************************************
 
@@ -485,7 +502,6 @@ df_weighting_pcn <- df_gp_popn %>%
             .groups = 'keep') %>%
   ungroup()
 
-
 # * 3.1. Population density ----
 # ``````````````````````````````
 # Load the LSOA 2011 shapefiles
@@ -506,59 +522,31 @@ df_popn_density <- df_gp_popn %>%
   mutate(popn_per_km2 = total_popn / area_km2) %>%
   transmute(geo_code = lsoa11cd, metric = 'popn_per_km2', value = popn_per_km2)
 
-df_popn_density_prac = fnGeo2Org(df_geo = df_popn_density, df_weighting = df_weighting_prac) %>%
+df_popn_density_prac <- fnGeo2Org(df_geo = df_popn_density, df_weighting = df_weighting_prac) %>%
   pivot_wider(names_from = 'metric', values_from = 'value')
-# Test L83066
-df_popn_density_prac %>% filter(org_code == 'L83066')
-df_popn_density_pcn = fnGeo2Org(df_geo = df_popn_density, df_weighting = df_weighting_pcn)
-# Test U06387
-df_popn_density_pcn %>% filter(org_code == 'U06387')
 
-######################################################################################
-
-
-# Calculate the population weighted population density for PCNs
-df_popn_density_pcn <- df_gp_popn %>% 
-  group_by(pcn_code, lsoa11cd) %>% 
-  summarise(reg_popn = sum(reg_popn),
-            .groups = 'keep') %>%
-  ungroup() %>%
-  left_join(df_popn_density, by = 'lsoa11cd') %>%
-  mutate(popn_per_km2 = popn_per_km2 * reg_popn) %>%
-  group_by(pcn_code) %>%
-  summarise(reg_popn = sum(reg_popn),
-            popn_per_km2 = sum(popn_per_km2),
-            .groups = 'keep') %>%
-  ungroup() %>%
-  mutate(popn_per_km2 = popn_per_km2 / reg_popn) %>%
-  select(-reg_popn)
-
-# Calculate the population weighted population density for practices
-df_popn_density_prac <- df_gp_popn %>% 
-  group_by(prac_code, lsoa11cd) %>% 
-  summarise(reg_popn = sum(reg_popn),
-            .groups = 'keep') %>%
-  ungroup() %>%
-  left_join(df_popn_density, by = 'lsoa11cd') %>%
-  mutate(popn_per_km2 = popn_per_km2 * reg_popn) %>%
-  group_by(prac_code) %>%
-  summarise(reg_popn = sum(reg_popn),
-            popn_per_km2 = sum(popn_per_km2),
-            .groups = 'keep') %>%
-  ungroup() %>%
-  mutate(popn_per_km2 = popn_per_km2 / reg_popn) %>%
-  select(-reg_popn)
+df_popn_density_pcn <- fnGeo2Org(df_geo = df_popn_density, df_weighting = df_weighting_pcn) %>%
+  pivot_wider(names_from = 'metric', values_from = 'value')
 
 # Add the practice data to the practice index file
-df_prac_index <- df_prac_index %>% 
-  left_join(df_popn_density_prac, by = c('org_code' = 'prac_code'))
+if(fnCheckFieldNames(df_popn_density_prac, df_prac_index)){
+  df_prac_index <- df_prac_index %>% 
+    left_join(df_popn_density_prac, by = 'org_code')
+} else {
+  'Duplicate fields exist'
+}
 
 # Add the PCN data to the PCN index file
-df_pcn_index <- df_pcn_index %>% 
-  left_join(df_popn_density_pcn, by = c('org_code' = 'pcn_code'))
+# Add the practice data to the practice index file
+if(fnCheckFieldNames(df_popn_density_pcn, df_pcn_index)){
+  df_pcn_index <- df_pcn_index %>% 
+    left_join(df_popn_density_pcn, by = 'org_code')
+} else {
+  'Duplicate fields exist'
+}
 
 # Tidy up
-rm(list=c('df_popn_density_prac', 'df_popn_density_pcn'))
+rm(list=c('sf_lsoa11', 'df_gp_popn', 'df_popn_density','df_popn_density_prac', 'df_popn_density_pcn'))
 
 # * 3.2. Census ethnicity data ----
 # `````````````````````````````````
@@ -583,38 +571,39 @@ df_ethnicity_2011 <- df_lsoa11_lsoa21 %>%
   summarise(across(.cols = 2:7, .fns = sum), .groups = 'keep') %>%
   ungroup() %>%
   mutate(across(.cols = 2:6, .fns = \(x) x / total_popn)) %>%
-  select(-total_popn)
+  select(-total_popn) %>%
+  pivot_longer(cols = 2:6, names_to = 'metric', values_to = 'value')
 
 # Create the practice level ethnicity
 df_ethnicity_prac <- fnGeo2Org(df_geo = df_ethnicity_2011 %>% 
                                  mutate(geo_code = lsoa11cd, .keep = 'unused', .before = 1),
-                               df_weighting = df_gp_popn %>% 
-                                 transmute(org_code = prac_code, 
-                                           geo_code = lsoa11cd,
-                                           weighting = reg_popn))
+                               df_weighting = df_weighting_prac) %>%
+  pivot_wider(names_from = 'metric', values_from = 'value')
 
 # Create the PCN level ethnicity
 df_ethnicity_pcn <- fnGeo2Org(df_geo = df_ethnicity_2011 %>% 
                                 mutate(geo_code = lsoa11cd, .keep = 'unused', .before = 1),
-                              df_weighting = df_gp_popn %>% 
-                                group_by(pcn_code, lsoa11cd) %>%
-                                summarise(reg_popn = sum(reg_popn, na.rm = TRUE),
-                                          .groups = 'keep') %>%
-                                ungroup() %>%
-                                transmute(org_code = pcn_code, 
-                                          geo_code = lsoa11cd,
-                                          weighting = reg_popn))
+                              df_weighting = df_weighting_pcn) %>%
+  pivot_wider(names_from = 'metric', values_from = 'value')
 
 # Add the practice data to the practice index file
-df_prac_index <- df_prac_index %>% 
-  left_join(df_ethnicity_prac, by = c('org_code' = 'org_code'))
+if(fnCheckFieldNames(df_ethnicity_prac, df_prac_index)){
+  df_prac_index <- df_prac_index %>% 
+    left_join(df_ethnicity_prac, by = 'org_code')
+} else {
+  'Duplicate fields exist'
+}
 
 # Add the PCN data to the PCN index file
-df_pcn_index <- df_pcn_index %>% 
-  left_join(df_ethnicity_pcn, by = c('org_code' = 'org_code'))
+if(fnCheckFieldNames(df_ethnicity_pcn, df_pcn_index)){
+  df_pcn_index <- df_pcn_index %>% 
+    left_join(df_ethnicity_pcn, by = 'org_code')
+} else {
+  'Duplicate fields exist'
+}
 
 # Tidy up
-rm(list=c('df_ethnicity_prac', 'df_ethnicity_pcn'))
+rm(list=c('df_ethnicity', 'df_ethnicity_2011', 'df_ethnicity_prac', 'df_ethnicity_pcn'))
 
 # * 3.3. Indices of multiple deprivation scores ----
 # ``````````````````````````````````````````````````
@@ -674,35 +663,36 @@ df_imd <- df_imd_domains %>%
   left_join(df_imd_underlying_indicators_education, by = 'lsoa11cd') %>% 
   left_join(df_imd_underlying_indicators_health, by = 'lsoa11cd') %>% 
   left_join(df_imd_underlying_indicators_barriers, by = 'lsoa11cd') %>% 
-  left_join(df_imd_underlying_indicators_environment, by = 'lsoa11cd')
+  left_join(df_imd_underlying_indicators_environment, by = 'lsoa11cd') %>% 
+  pivot_longer(cols = 2:NCOL(.), names_to = 'metric', values_to = 'value')
 
 # Create the practice level IMD
 df_imd_prac <- fnGeo2Org(df_geo = df_imd %>% 
                            mutate(geo_code = lsoa11cd, .keep = 'unused', .before = 1),
-                         df_weighting = df_gp_popn %>% 
-                           transmute(org_code = prac_code, 
-                                     geo_code = lsoa11cd,
-                                     weighting = reg_popn))
+                         df_weighting = df_weighting_prac) %>%
+  pivot_wider(names_from = 'metric', values_from = 'value')
 
 # Create the PCN level ethnicity
 df_imd_pcn <- fnGeo2Org(df_geo = df_imd %>% 
-                          mutate(geo_code = lsoa11cd, .keep = 'unused', .before = 1),
-                        df_weighting = df_gp_popn %>% 
-                          group_by(pcn_code, lsoa11cd) %>%
-                          summarise(reg_popn = sum(reg_popn, na.rm = TRUE),
-                                    .groups = 'keep') %>%
-                          ungroup() %>%
-                          transmute(org_code = pcn_code, 
-                                    geo_code = lsoa11cd,
-                                    weighting = reg_popn))
+                           mutate(geo_code = lsoa11cd, .keep = 'unused', .before = 1),
+                         df_weighting = df_weighting_pcn) %>%
+  pivot_wider(names_from = 'metric', values_from = 'value')
 
 # Add the practice data to the practice index file
-df_prac_index <- df_prac_index %>% 
-  left_join(df_imd_prac, by = c('org_code' = 'org_code'))
+if(fnCheckFieldNames(df_imd_prac, df_prac_index)){
+  df_prac_index <- df_prac_index %>% 
+    left_join(df_imd_prac, by = 'org_code')
+} else {
+  'Duplicate fields exist'
+}
 
 # Add the PCN data to the PCN index file
-df_pcn_index <- df_pcn_index %>% 
-  left_join(df_imd_pcn, by = c('org_code' = 'org_code'))
+if(fnCheckFieldNames(df_imd_pcn, df_prac_index)){
+  df_pcn_index <- df_pcn_index %>% 
+    left_join(df_imd_pcn, by = 'org_code')
+} else {
+  'Duplicate fields exist'
+}
 
 # Tidy up
 rm(list=c('df_imd_domains',
@@ -713,17 +703,16 @@ rm(list=c('df_imd_domains',
 # 4. Output the unprocessed data ----
 # ***********************************
 
-df_field_list <- read.csv('./output/field_list.csv')
-
 dir.create('./output', showWarnings = FALSE, recursive = TRUE)
 write.csv(df_prac_index, './output/practice_level_nn_data.csv', row.names = FALSE)
 write.csv(df_pcn_index, './output/pcn_level_nn_data.csv', row.names = FALSE)
-save(list=c('df_field_list', 'df_prac_index', 'df_pcn_index'), file = './output/nn_data.RObj')
+save(list=c('df_prac_index', 'df_pcn_index'), file = './output/nn_data.RObj')
 
 # 5. Create the distance matrix ----
 # **********************************
 
-prac_dist_matrix <- dist(scale(df_prac_index[,c(10:45, 152:206)]))
+# Scale the data - ignoring the organisational details, the QOF achievement and the income
+prac_dist_matrix <- dist(scale(df_prac_index[,c(10:45, 152:155, 157:206)]))
 
 df_prac_distances <- dist2list(prac_dist_matrix) %>% 
   filter(col!=row) %>%
@@ -733,7 +722,8 @@ df_prac_distances <- dist2list(prac_dist_matrix) %>%
     distance = value
   )
 
-pcn_dist_matrix <- dist(scale(df_pcn_index[,c(10:45, 152:207)]))
+# Scale the data - ignoring the organisational details, the QOF achievement and the income
+pcn_dist_matrix <- dist(scale(df_pcn_index[,c(10:45, 152:155, 157:207)]))
 
 df_pcn_distances <- dist2list(pcn_dist_matrix) %>% 
   filter(col!=row) %>%
@@ -752,7 +742,7 @@ save(list=c('df_prac_distances', 'df_pcn_distances'), file = './output/dist_data
 # ***************************
 
 # K-means clustering set-up
-kmeans_input <- df_prac_index %>% select(c(10:45, 152:206))
+kmeans_input <- df_prac_index %>% select(c(10:45, 152:155, 157:206))
 kmeans_input[is.na(kmeans_input)] <- 0
 kmeans_input <- scale(kmeans_input, center = TRUE, scale = TRUE)
 
@@ -762,7 +752,7 @@ res_kmeans <- kmeans(kmeans_input, centers = 7, iter.max = 20, nstart = 20)
 df_prac_index$cluster <- res_kmeans$cluster
 
 # K-means clustering set-up
-kmeans_input <- df_pcn_index %>% select(c(10:45, 152:207))
+kmeans_input <- df_pcn_index %>% select(c(10:45, 152:155, 157:207))
 kmeans_input[is.na(kmeans_input)] <- 0
 kmeans_input <- scale(kmeans_input, center = TRUE, scale = TRUE)
 
