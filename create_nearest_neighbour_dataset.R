@@ -687,7 +687,7 @@ if(fnCheckFieldNames(df_imd_prac, df_prac_index)){
 }
 
 # Add the PCN data to the PCN index file
-if(fnCheckFieldNames(df_imd_pcn, df_prac_index)){
+if(fnCheckFieldNames(df_imd_pcn, df_pcn_index)){
   df_pcn_index <- df_pcn_index %>% 
     left_join(df_imd_pcn, by = 'org_code')
 } else {
@@ -736,7 +736,16 @@ df_pcn_distances <- dist2list(pcn_dist_matrix) %>%
 dir.create('./output', showWarnings = FALSE, recursive = TRUE)
 write.csv(df_prac_distances, './output/practice_dist_matrix.csv', row.names = FALSE)
 write.csv(df_pcn_distances, './output/pcn_dist_matrix.csv', row.names = FALSE)
+write.csv(df_prac_distances %>% arrange(distance) %>% group_by(orig) %>% slice_head(n = 10), 
+          './output/practice_nearest_10.csv', row.names = FALSE)
+write.csv(df_pcn_distances %>% arrange(distance) %>% group_by(orig) %>% slice_head(n = 10), 
+          './output/pcn_nearest_10.csv', row.names = FALSE)
+write.csv(df_prac_distances %>% arrange(distance) %>% group_by(orig) %>% slice_tail(n = 10), 
+          './output/practice_furthest_10.csv', row.names = FALSE)
+write.csv(df_pcn_distances %>% arrange(distance) %>% group_by(orig) %>% slice_tail(n = 10), 
+          './output/pcn_furthest_10.csv', row.names = FALSE)
 save(list=c('df_prac_distances', 'df_pcn_distances'), file = './output/dist_data.RObj')
+
 
 # 6. Create the clusters ----
 # ***************************
@@ -760,7 +769,6 @@ factoextra::fviz_nbclust(kmeans_input, kmeans, method = "wss", iter.max = 20)
 factoextra::fviz_nbclust(kmeans_input, kmeans, method = "silhouette", iter.max = 20) + labs(subtitle = "Silhouette method")
 res_kmeans <- kmeans(kmeans_input, centers = 5, iter.max = 20, nstart = 20)
 df_pcn_index$cluster <- res_kmeans$cluster
-
 
 # 7. Map ----
 # ***********
@@ -913,3 +921,11 @@ prac_map <- leaflet() %>%
   addLayersControl(overlayGroups = c('1','2','3','4','5','6','7'))
 prac_map
 
+# # 8. Read data ----
+# ###################
+# 
+# load(file = './output/nn_data.RObj')
+# load(file = './output/dist_data.RObj')
+# df_prac_distances_n10 <- df_prac_distances %>% arrange(distance) %>% group_by(orig) %>% slice_head(n = 10)
+# df_pcn_distances_n10 <- df_pcn_distances %>% arrange(distance) %>% group_by(orig) %>% slice_head(n = 10)
+# save(list=c('df_prac_distances_n10', 'df_pcn_distances_n10'), file = './output/dist_data_n10.RObj')
