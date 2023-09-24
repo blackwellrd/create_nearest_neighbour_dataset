@@ -1,0 +1,208 @@
+name,group,desc,group_order,item_order
+org_code,Organisation Details,PCN Code,1,1
+org_name,Organisation Details,PCN Name,1,2
+postcode,Organisation Details,Postcode,1,3
+icb_code,Organisation Details,ICB Code,1,4
+icb_name,Organisation Details,ICB Name,1,5
+nhser_code,Organisation Details,NHSE Region Code,1,6
+nhser_name,Organisation Details,NHSE Region Code,1,7
+latitude,Organisation Details,Latitude,1,8
+longitude,Organisation Details,Longitude,1,9
+q1_females,Population Data,Q1 Age - Female,2,1
+q1_males,Population Data,Q1 Age - Male,2,2
+q1_persons,Population Data,Q1 Age - Persons,2,3
+median_females,Population Data,Median Age - Female,2,4
+median_males,Population Data,Median Age - Male,2,5
+median_persons,Population Data,Median Age - Persons,2,6
+q3_females,Population Data,Q3 Age - Female,2,7
+q3_males,Population Data,Q3 Age - Male,2,8
+q3_persons,Population Data,Q3 Age - Persons,2,9
+iqr_females,Population Data,IQR - Female,2,10
+iqr_males,Population Data,IQR - Male,2,11
+iqr_persons,Population Data,IQR - Persons,2,12
+popn_females,Population Data,Population - Female,2,13
+popn_males,Population Data,Population - Male,2,14
+popn_persons,Population Data,Population - Persons,2,15
+af,QOF Prevalence,QOF Prev - AF,4,1
+ast,QOF Prevalence,QOF Prev - AST,4,2
+can,QOF Prevalence,QOF Prev - CAN,4,3
+chd,QOF Prevalence,QOF Prev - CHD,4,4
+ckd,QOF Prevalence,QOF Prev - CKD,4,5
+copd,QOF Prevalence,QOF Prev - COPD,4,6
+dem,QOF Prevalence,QOF Prev - DEM,4,7
+dep,QOF Prevalence,QOF Prev - DEP,4,8
+dm,QOF Prevalence,QOF Prev - DM,4,9
+ep,QOF Prevalence,QOF Prev - EP,4,10
+hf,QOF Prevalence,QOF Prev - HF,4,11
+hyp,QOF Prevalence,QOF Prev - HYP,4,12
+ld,QOF Prevalence,QOF Prev - LD,4,13
+mh,QOF Prevalence,QOF Prev - MH,4,14
+ndh,QOF Prevalence,QOF Prev - NDH,4,15
+ob,QOF Prevalence,QOF Prev - OB,4,16
+ost,QOF Prevalence,QOF Prev - OST,4,17
+pad,QOF Prevalence,QOF Prev - PAD,4,18
+pc,QOF Prevalence,QOF Prev - PC,4,19
+ra,QOF Prevalence,QOF Prev - RA,4,20
+stia,QOF Prevalence,QOF Prev - STIA,4,21
+af006,QOF Achievement,QOF Achv - AF006,5,1
+af007,QOF Achievement,QOF Achv - AF007,5,2
+ast006,QOF Achievement,QOF Achv - AST006,5,3
+ast007,QOF Achievement,QOF Achv - AST007,5,4
+ast008,QOF Achievement,QOF Achv - AST008,5,5
+bp002,QOF Achievement,QOF Achv - BP002,5,6
+can004,QOF Achievement,QOF Achv - CAN004,5,7
+can005,QOF Achievement,QOF Achv - CAN005,5,8
+chd005,QOF Achievement,QOF Achv - CHD005,5,9
+chd008,QOF Achievement,QOF Achv - CHD008,5,10
+chd009,QOF Achievement,QOF Achv - CHD009,5,11
+copd008,QOF Achievement,QOF Achv - COPD008,5,12
+copd010,QOF Achievement,QOF Achv - COPD010,5,13
+cs005,QOF Achievement,QOF Achv - CS005,5,14
+cs006,QOF Achievement,QOF Achv - CS006,5,15
+dem004,QOF Achievement,QOF Achv - DEM004,5,16
+dep003,QOF Achievement,QOF Achv - DEP003,5,17
+dm006,QOF Achievement,QOF Achv - DM006,5,18
+dm012,QOF Achievement,QOF Achv - DM012,5,19
+dm014,QOF Achievement,QOF Achv - DM014,5,20
+dm019,QOF Achievement,QOF Achv - DM019,5,21
+dm020,QOF Achievement,QOF Achv - DM020,5,22
+dm021,QOF Achievement,QOF Achv - DM021,5,23
+dm022,QOF Achievement,QOF Achv - DM022,5,24
+dm023,QOF Achievement,QOF Achv - DM023,5,25
+hf003,QOF Achievement,QOF Achv - HF003,5,26
+hf005,QOF Achievement,QOF Achv - HF005,5,27
+hf006,QOF Achievement,QOF Achv - HF006,5,28
+hf007,QOF Achievement,QOF Achv - HF007,5,29
+hyp003,QOF Achievement,QOF Achv - HYP003,5,30
+hyp007,QOF Achievement,QOF Achv - HYP007,5,31
+mh002,QOF Achievement,QOF Achv - MH002,5,32
+mh003,QOF Achievement,QOF Achv - MH003,5,33
+mh006,QOF Achievement,QOF Achv - MH006,5,34
+mh007,QOF Achievement,QOF Achv - MH007,5,35
+mh011,QOF Achievement,QOF Achv - MH011,5,36
+mh012,QOF Achievement,QOF Achv - MH012,5,37
+ndh001,QOF Achievement,QOF Achv - NDH001,5,38
+qipddmi001,QOF Achievement,QOF Achv - QIPDDMI001,5,39
+qipddmi002,QOF Achievement,QOF Achv - QIPDDMI002,5,40
+qipddmi003,QOF Achievement,QOF Achv - QIPDDMI003,5,41
+qipddmi004,QOF Achievement,QOF Achv - QIPDDMI004,5,42
+ra002,QOF Achievement,QOF Achv - RA002,5,43
+smok002,QOF Achievement,QOF Achv - SMOK002,5,44
+smok004,QOF Achievement,QOF Achv - SMOK004,5,45
+smok005,QOF Achievement,QOF Achv - SMOK005,5,46
+stia007,QOF Achievement,QOF Achv - STIA007,5,47
+stia010,QOF Achievement,QOF Achv - STIA010,5,48
+stia011,QOF Achievement,QOF Achv - STIA011,5,49
+vi001,QOF Achievement,QOF Achv - VI001,5,50
+vi002,QOF Achievement,QOF Achv - VI002,5,51
+vi003,QOF Achievement,QOF Achv - VI003,5,52
+vi004,QOF Achievement,QOF Achv - VI004,5,53
+af006_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - AF006,6,1
+af007_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - AF007,6,2
+ast006_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - AST006,6,3
+ast007_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - AST007,6,4
+ast008_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - AST008,6,5
+bp002_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - BP002,6,6
+can004_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - CAN004,6,7
+can005_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - CAN005,6,8
+chd005_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - CHD005,6,9
+chd008_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - CHD008,6,10
+chd009_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - CHD009,6,11
+copd008_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - COPD008,6,12
+copd010_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - COPD010,6,13
+cs005_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - CS005,6,14
+cs006_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - CS006,6,15
+dem004_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - DEM004,6,16
+dep003_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - DEP003,6,17
+dm006_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - DM006,6,18
+dm012_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - DM012,6,19
+dm014_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - DM014,6,20
+dm019_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - DM019,6,21
+dm020_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - DM020,6,22
+dm021_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - DM021,6,23
+dm022_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - DM022,6,24
+dm023_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - DM023,6,25
+hf003_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - HF003,6,26
+hf005_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - HF005,6,27
+hf006_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - HF006,6,28
+hf007_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - HF007,6,29
+hyp003_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - HYP003,6,30
+hyp007_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - HYP007,6,31
+mh002_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - MH002,6,32
+mh003_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - MH003,6,33
+mh006_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - MH006,6,34
+mh007_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - MH007,6,35
+mh011_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - MH011,6,36
+mh012_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - MH012,6,37
+ndh001_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - NDH001,6,38
+qipddmi001_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - QIPDDMI001,6,39
+qipddmi002_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - QIPDDMI002,6,40
+qipddmi003_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - QIPDDMI003,6,41
+qipddmi004_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - QIPDDMI004,6,42
+ra002_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - RA002,6,43
+smok002_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - SMOK002,6,44
+smok004_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - SMOK004,6,45
+smok005_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - SMOK005,6,46
+stia007_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - STIA007,6,47
+stia010_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - STIA010,6,48
+stia011_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - STIA011,6,49
+vi001_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - VI001,6,50
+vi002_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - VI002,6,51
+vi003_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - VI003,6,52
+vi004_raw,QOF Achievement (Unadjusted),QOF Achv (Unadj) - VI004,6,53
+admin_fte,Workforce and Income,Staff FTE - Admin,3,1
+dpc_fte,Workforce and Income,Staff FTE - Dir Pt Care,3,2
+dir_fte,Workforce and Income,Staff FTE - Directors,3,3
+gp_fte,Workforce and Income,Staff FTE - GP,3,4
+nurse_fte,Workforce and Income,Staff FTE - Nurse,3,5
+income_per_head_popn,Workforce and Income,Income (£/popn),3,6
+popn_per_km2,Population Data,Population Density (popn/km2),2,16
+asian,Population Data,Population - Asian,2,17
+black,Population Data,Population - Black,2,18
+mixed,Population Data,Population - Mixed,2,19
+other,Population Data,Population - Other,2,20
+white,Population Data,Population - White,2,21
+acute_morbidity,IMD Indicators,IMD Ind. - Acute Morbidity,8,10
+adult_edu_subdomain,IMD Domains,IMD Subdomain - Adult Edu.,7,12
+adult_skills_numerator,IMD Indicators,IMD Ind. - Adult Skills,8,7
+air_quality,IMD Indicators,IMD Ind. - Air Quality,8,28
+benzene,IMD Indicators,IMD Ind. - Benzene,8,25
+children_edu_subdomain,IMD Domains,IMD Subdomain - Child Edu.,7,11
+comparative_illness_and_disability,IMD Indicators,IMD Ind. - Comp. Illness & Disability,8,9
+crime_domain,IMD Domains,IMD - Crime,7,6
+education_domain,IMD Domains,IMD - Education,7,4
+employment_domain,IMD Domains,IMD - Employment,7,3
+employment_numerator,IMD Indicators,IMD Ind. - Employment Num.,8,4
+entry_to_higher_edu_numerator,IMD Indicators,IMD Ind. - Higher Edu. Num.,8,6
+environment_domain,IMD Domains,IMD - Environment,7,8
+general_store_distance,IMD Indicators,IMD Ind. - Distance to Shop,8,14
+geographical_barriers_subdomain,IMD Domains,IMD Subdomain - Geographical,7,13
+gp_distance,IMD Indicators,IMD Ind. - Distance to GP,8,15
+health_domain,IMD Domains,IMD - Health,7,5
+homelessness_indicator,IMD Indicators,IMD Ind. - Homelessness,8,17
+household_overcrowding,IMD Indicators,IMD Ind. - Overcrowding,8,16
+housing_affordability,IMD Indicators,IMD Ind. - Affordability,8,20
+housing_and_services_domain,IMD Domains,IMD - Barriers to Housing & Services,7,7
+housing_without_central_heating,IMD Indicators,IMD Ind. - No Central Heating,8,22
+idaci_numerator,IMD Indicators,IMD Ind. - IDACI Num.,8,2
+idaci_subdomain,IMD Domains,IMD Subdomain - IDACI,7,9
+idaopi_subdomain,IMD Domains,IMD Subdomain - IDAOPI,7,10
+idopi_numerator,IMD Indicators,IMD Ind. - IDAOPI Num.,8,3
+imd,IMD Domains,IMD - Indices of Multiple Deprivation,7,1
+income_domain,IMD Domains,IMD - Income,7,2
+income_numerator,IMD Indicators,IMD Ind. - Income Num.,8,1
+indoors_subdomain,IMD Domains,IMD Subdomain - Indoors,7,15
+mood_and_anxiety_disorders,IMD Indicators,IMD Ind. - Mood & Anxiety Disorders,8,11
+nitrogen_dioxide,IMD Indicators,IMD Ind. - Nitrogen Dioxide,8,24
+outdoors_subdomain,IMD Domains,IMD Subdomain - Outdoors,7,16
+owner_occupation_affordability,IMD Indicators,IMD Ind. - Owner Affordability,8,18
+particulates,IMD Indicators,IMD Ind. - Particulates,8,27
+poor_quality_housing,IMD Indicators,IMD Ind. - Poor Quality Housing,8,21
+post_16_education_numerator,IMD Indicators,IMD Ind. - Post 16yr Edu. Num.,8,5
+post_office_distance,IMD Indicators,IMD Ind. - Distance to Post Office,8,12
+primary_school_distance,IMD Indicators,IMD Ind. - Distance to Primary School,8,13
+private_rental_affordability,IMD Indicators,IMD Ind. - Rental Affordability,8,19
+suplhur_dioxide,IMD Indicators,IMD Ind. - Sulphur Dioxide,8,26
+traffic_accidents,IMD Indicators,IMD Ind. - Traffice Accidents,8,23
+wider_barriers_subdomain,IMD Domains,IMD Subdomain - Wider Barriers,7,14
+year_of_life_lost,IMD Indicators,IMD Ind. - Years of Life Lost,8,8

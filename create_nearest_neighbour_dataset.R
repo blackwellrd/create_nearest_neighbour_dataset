@@ -654,7 +654,7 @@ df_imd_underlying_indicators_environment <- read_excel(path = imd_underlying_ind
                                                        sheet = imd_underlying_indicators_environment_sheet) %>% 
   select(1, 5:12) %>%
   rename_with(.fn = ~c('lsoa11cd', 'poor_quality_housing', 'housing_without_central_heating', 'traffic_accidents', 
-                       'nitrogen_dioxide', 'benzene', 'suplhur_dioxide', 'particulates', 'air_quality'))
+                       'nitrogen_dioxide', 'benzene', 'sulphur_dioxide', 'particulates', 'air_quality'))
 
 # Combine all the underlying indicators and the domain data
 df_imd <- df_imd_domains %>%
@@ -736,16 +736,13 @@ df_pcn_distances <- dist2list(pcn_dist_matrix) %>%
 dir.create('./output', showWarnings = FALSE, recursive = TRUE)
 write.csv(df_prac_distances, './output/practice_dist_matrix.csv', row.names = FALSE)
 write.csv(df_pcn_distances, './output/pcn_dist_matrix.csv', row.names = FALSE)
-write.csv(df_prac_distances %>% arrange(distance) %>% group_by(orig) %>% slice_head(n = 10), 
-          './output/practice_nearest_10.csv', row.names = FALSE)
-write.csv(df_pcn_distances %>% arrange(distance) %>% group_by(orig) %>% slice_head(n = 10), 
-          './output/pcn_nearest_10.csv', row.names = FALSE)
-write.csv(df_prac_distances %>% arrange(distance) %>% group_by(orig) %>% slice_tail(n = 10), 
-          './output/practice_furthest_10.csv', row.names = FALSE)
-write.csv(df_pcn_distances %>% arrange(distance) %>% group_by(orig) %>% slice_tail(n = 10), 
-          './output/pcn_furthest_10.csv', row.names = FALSE)
+df_prac_distances_n10 <- df_prac_distances %>% arrange(distance) %>% group_by(orig) %>% slice_head(n = 10)
+df_pcn_distances_n10 <- df_pcn_distances %>% arrange(distance) %>% group_by(orig) %>% slice_head(n = 10)
+df_prac_distances_f10 <- df_prac_distances %>% arrange(distance) %>% group_by(orig) %>% slice_tail(n = 10)
+df_pcn_distances_f10 <- df_pcn_distances %>% arrange(distance) %>% group_by(orig) %>% slice_tail(n = 10)
 save(list=c('df_prac_distances', 'df_pcn_distances'), file = './output/dist_data.RObj')
-
+save(list=c('df_prac_distances_n10', 'df_pcn_distances_n10'), file = './output/dist_data_n10.RObj')
+save(list=c('df_prac_distances_f10', 'df_pcn_distances_f10'), file = './output/dist_data_f10.RObj')
 
 # 6. Create the clusters ----
 # ***************************
@@ -759,6 +756,7 @@ factoextra::fviz_nbclust(kmeans_input, kmeans, method = "wss", iter.max = 20)
 factoextra::fviz_nbclust(kmeans_input, kmeans, method = "silhouette", iter.max = 20) + labs(subtitle = "Silhouette method")
 res_kmeans <- kmeans(kmeans_input, centers = 7, iter.max = 20, nstart = 20)
 df_prac_index$cluster <- res_kmeans$cluster
+df_prac_clust <- df_prac_index %>% select(org_code, cluster)
 
 # K-means clustering set-up
 kmeans_input <- df_pcn_index %>% select(c(10:45, 152:155, 157:207))
@@ -769,6 +767,8 @@ factoextra::fviz_nbclust(kmeans_input, kmeans, method = "wss", iter.max = 20)
 factoextra::fviz_nbclust(kmeans_input, kmeans, method = "silhouette", iter.max = 20) + labs(subtitle = "Silhouette method")
 res_kmeans <- kmeans(kmeans_input, centers = 5, iter.max = 20, nstart = 20)
 df_pcn_index$cluster <- res_kmeans$cluster
+df_pcn_clust <- df_pcn_index %>% select(org_code, cluster)
+save(list=c('df_prac_clust', 'df_pcn_clust'), file = './output/clusters.RObj')
 
 # 7. Map ----
 # ***********
