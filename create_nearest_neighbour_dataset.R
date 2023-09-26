@@ -926,6 +926,7 @@ prac_map
 # 
 # load(file = './output/nn_data.RObj')
 # load(file = './output/dist_data.RObj')
+# load(file = './output/clusters.RObj')
 # df_prac_distances_n10 <- df_prac_distances %>% arrange(distance) %>% group_by(orig) %>% slice_head(n = 10)
 # df_pcn_distances_n10 <- df_pcn_distances %>% arrange(distance) %>% group_by(orig) %>% slice_head(n = 10)
 # save(list=c('df_prac_distances_n10', 'df_pcn_distances_n10'), file = './output/dist_data_n10.RObj')
