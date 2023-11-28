@@ -703,6 +703,23 @@ rm(list=c('df_imd_domains',
 # 4. Output the unprocessed data ----
 # ***********************************
 
+# Slight tweak to rename and add an addition population field just for the display variable in the shiny app
+df_prac_index <- df_prac_index %>% mutate(ORG_CODE = org_code, ORG_NAME = org_name, POSTCODE = postcode,
+                                          ICB_CODE = icb_code, ICB_NAME = icb_name,
+                                          NHSER_CODE = nhser_code, NHSER_NAME = nhser_name,
+                                          LATITUDE = latitude, LONGITUDE = longitude, 
+                                          .keep = 'unused', .before = 1) %>%
+  mutate(POPN = popn_persons, .keep = 'all', .after = 'LONGITUDE')
+
+# Same for the PCN data with the added step of removing the dir_fte field as the practice does not have an equivalent
+df_pcn_index <- df_pcn_index %>% mutate(ORG_CODE = org_code, ORG_NAME = org_name, POSTCODE = postcode,
+                                        ICB_CODE = icb_code, ICB_NAME = icb_name,
+                                        NHSER_CODE = nhser_code, NHSER_NAME = nhser_name,
+                                        LATITUDE = latitude, LONGITUDE = longitude, 
+                                        .keep = 'unused', .before = 1) %>% 
+  mutate(POPN = popn_persons, .keep = 'all', .after = 'LONGITUDE') %>% 
+  select(-dir_fte)
+
 dir.create('./output', showWarnings = FALSE, recursive = TRUE)
 write.csv(df_prac_index, './output/practice_level_nn_data.csv', row.names = FALSE)
 write.csv(df_pcn_index, './output/pcn_level_nn_data.csv', row.names = FALSE)
@@ -924,9 +941,11 @@ prac_map
 # # 8. Read data ----
 # ###################
 # 
-# load(file = './output/nn_data.RObj')
-# load(file = './output/dist_data.RObj')
-# load(file = './output/clusters.RObj')
-# df_prac_distances_n10 <- df_prac_distances %>% arrange(distance) %>% group_by(orig) %>% slice_head(n = 10)
-# df_pcn_distances_n10 <- df_pcn_distances %>% arrange(distance) %>% group_by(orig) %>% slice_head(n = 10)
-# save(list=c('df_prac_distances_n10', 'df_pcn_distances_n10'), file = './output/dist_data_n10.RObj')
+load(file = './output/nn_data.RObj')
+load(file = './output/dist_data.RObj')
+load(file = './output/clusters.RObj')
+df_prac_distances_n10 <- df_prac_distances %>% arrange(distance) %>% group_by(orig) %>% slice_head(n = 10)
+df_pcn_distances_n10 <- df_pcn_distances %>% arrange(distance) %>% group_by(orig) %>% slice_head(n = 10)
+save(list=c('df_prac_distances_n10', 'df_pcn_distances_n10'), file = './output/dist_data_n10.RObj')
+write.csv(df_prac_distances_n10, './output/practice_dist_matrix.csv', row.names = FALSE)
+write.csv(df_pcn_distances_n10, './output/pcn_dist_matrix.csv', row.names = FALSE)
