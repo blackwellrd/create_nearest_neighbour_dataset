@@ -202,7 +202,7 @@ post_16_education_numerator,IMD Indicators,IMD Ind. - Post 16yr Edu. Num.,8,5
 post_office_distance,IMD Indicators,IMD Ind. - Distance to Post Office,8,12
 primary_school_distance,IMD Indicators,IMD Ind. - Distance to Primary School,8,13
 private_rental_affordability,IMD Indicators,IMD Ind. - Rental Affordability,8,19
-suplhur_dioxide,IMD Indicators,IMD Ind. - Sulphur Dioxide,8,26
+sulphur_dioxide,IMD Indicators,IMD Ind. - Sulphur Dioxide,8,26
 traffic_accidents,IMD Indicators,IMD Ind. - Traffice Accidents,8,23
 wider_barriers_subdomain,IMD Domains,IMD Subdomain - Wider Barriers,7,14
 year_of_life_lost,IMD Indicators,IMD Ind. - Years of Life Lost,8,8
