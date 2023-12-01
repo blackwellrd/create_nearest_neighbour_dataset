@@ -27,67 +27,72 @@ library(sf)
 library(rgdal)
 library(spaa)
 library(factoextra)
+library(ini)
+
+# Load the ini file settings
+ini_file_settings <- ini::read.ini('create_nearest_neighbour_dataset.ini')
 
 # GP Registration - LSOA
-gp_population_filename <- 'D:/Data/NHSD/GPREGLSOA/20230701/gp-reg-pat-prac-lsoa-all.csv'
+gp_population_filename <- ini_file_settings$filenames$gp_population_filename
 
 # Current practices
-epraccur_filename <- 'D:/Data/NHSD/EPRACCUR/20230825/epraccur.csv'
+epraccur_filename <- ini_file_settings$filenames$epraccur_filename
 
 # PCNs and member practices
-pcn_filename <- 'D:/Data/NHSD/EPCN/20230825/ePCN.xlsx'
-pcn_detail_sheet <- 'PCNDetails'
-pcn_member_sheet <- 'PCN Core Partner Details'
+pcn_filename <- ini_file_settings$filenames$pcn_filename
+pcn_detail_sheet <- ini_file_settings$filenames$pcn_detail_sheet
+pcn_member_sheet <- ini_file_settings$filenames$pcn_member_sheet
 
 # Location to ICB to NHSE region lookup
-loc_icb_nhser_lookup_filename <- 'D:/Data/OpenGeography/Lookups/LOC22_ICB22_NHSER22/LOC22_ICB22_NHSER22_EN_LU.xlsx'
-loc_icb_nhser_lookup_sheet <- 'LOC22_ICB22_NHSER22_EN_LU'
+loc_icb_nhser_lookup_filename <- ini_file_settings$filenames$loc_icb_nhser_lookup_filename
+loc_icb_nhser_lookup_sheet <- ini_file_settings$filenames$loc_icb_nhser_lookup_sheet
 
 # Postcode lookup
-postcode_lookup_filename <- 'D:/Data/OpenGeography/Lookups/PCD/20230823/Data/ONSPD_AUG_2023_UK.csv'
+postcode_lookup_filename <- ini_file_settings$filenames$postcode_lookup_filename
 
 # LSOA 2011 Shapefile
-lsoa11_shapefile_dsn <- 'D:/Data/OpenGeography/Shapefiles/LSOA11'
-lsoa11_shapefile_layer <- 'lsoa11'
+lsoa11_shapefile_dsn <- ini_file_settings$filenames$lsoa11_shapefile_dsn
+lsoa11_shapefile_layer <- ini_file_settings$filenames$lsoa11_shapefile_layer
 
 # GP Registrations - Age and Gender
-age_female_filename <- 'D:/Data/NHSD/GPREGSYOA/20230701/gp-reg-pat-prac-sing-age-female.csv'
-age_male_filename <- 'D:/Data/NHSD/GPREGSYOA/20230701/gp-reg-pat-prac-sing-age-male.csv'
+age_female_filename <- ini_file_settings$filenames$age_female_filename
+age_male_filename <- ini_file_settings$filenames$age_male_filename
   
 # QOF Prevalence
-qof_prevalence_filename <- 'D:/Data/NHSD/QOF/2023/PREVALENCE_2223.csv'
+qof_prevalence_filename <- ini_file_settings$filenames$qof_prevalence_filename
 
 # QOF Achievement
-qof_achievement_ee_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_EAST_OF_ENGLAND_2223.csv'
-qof_achievement_ln_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_LONDON_2223.csv'
-qof_achievement_md_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_MIDLANDS_2223.csv'
-qof_achievement_ne_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_NORTH_EAST_AND_YORKSHIRE_2223.csv'
-qof_achievement_nw_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_NORTH_WEST_2223.csv'
-qof_achievement_se_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_SOUTH_EAST_2223.csv'
-qof_achievement_sw_filename <- 'D:/Data/NHSD/QOF/2023/ACHIEVEMENT_SOUTH_WEST_2223.csv'
+qof_achievement_ee_filename <- ini_file_settings$filenames$qof_achievement_ee_filename
+qof_achievement_ln_filename <- ini_file_settings$filenames$qof_achievement_ln_filename
+qof_achievement_md_filename <- ini_file_settings$filenames$qof_achievement_md_filename
+qof_achievement_ne_filename <- ini_file_settings$filenames$qof_achievement_ne_filename
+qof_achievement_nw_filename <- ini_file_settings$filenames$qof_achievement_nw_filename
+qof_achievement_se_filename <- ini_file_settings$filenames$qof_achievement_se_filename
+qof_achievement_sw_filename <- ini_file_settings$filenames$qof_achievement_sw_filename
 
 # Practice Payments
-# URL: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-payments-to-general-practice/england-2021-22
-practice_income_filename <- 'D:/Data/NHSD/NHS_PAYMENTS/2022/nhspaymentsgp-21-22-prac-csv-v2.csv'
-pcn_income_filename <- 'D:/Data/NHSD/NHS_PAYMENTS/2022/nhspaymentsgp-21-22-pcn-csv.csv'
+practice_income_filename <- ini_file_settings$filenames$practice_income_filename
+pcn_income_filename <- ini_file_settings$filenames$pcn_income_filename
 
 # Workforce
-practice_workforce_filename <- 'D:/Data/NHSD/WORKFORCE/20230731/3 General Practice – July 2023 Practice Level - High level.csv'
-pcn_workforce_filename <- 'D:/Data/NHSD/WORKFORCE/20230731/Primary Care Networks - July 2023 Individual Level.csv'
+practice_workforce_filename <- ini_file_settings$filenames$practice_workforce_filename
+pcn_workforce_filename <- ini_file_settings$filenames$pcn_workforce_filename
 
 # Census 2021 ethnicity
-ethnicity_filename <- 'D:/Data/NOMIS/Census_2021/TS/census2021-ts021/census2021-ts021-lsoa.csv'
+ethnicity_filename <- ini_file_settings$filenames$ethnicity_filename
 
 # IMD data
-imd_filename <- 'D:/Data/GOV.UK/IMD/2019/File_7_-_All_IoD2019_Scores__Ranks__Deciles_and_Population_Denominators_3.csv'
-imd_underlying_indicators_filename <- 'D:/Data/GOV.UK/IMD/2019/File_8_-_IoD2019_Underlying_Indicators.xlsx'
-imd_underlying_indicators_income_sheet <- 'IoD2019 Income Domain'
-imd_underlying_indicators_employment_sheet <- 'IoD2019 Employment Domain'
-imd_underlying_indicators_education_sheet <- 'IoD2019 Education Domain'
-imd_underlying_indicators_health_sheet <- 'IoD2019 Health Domain'
-imd_underlying_indicators_barriers_sheet <- 'IoD2019 Barriers Domain'
-imd_underlying_indicators_environment_sheet <- 'IoD2019 Living Env Domain'
+imd_filename <- ini_file_settings$filenames$imd_filename
+imd_underlying_indicators_filename <- ini_file_settings$filenames$imd_underlying_indicators_filename
+imd_underlying_indicators_income_sheet <- ini_file_settings$filenames$imd_underlying_indicators_income_sheet
+imd_underlying_indicators_employment_sheet <- ini_file_settings$filenames$imd_underlying_indicators_employment_sheet
+imd_underlying_indicators_education_sheet <- ini_file_settings$filenames$imd_underlying_indicators_education_sheet
+imd_underlying_indicators_health_sheet <- ini_file_settings$filenames$imd_underlying_indicators_health_sheet
+imd_underlying_indicators_barriers_sheet <- ini_file_settings$filenames$imd_underlying_indicators_barriers_sheet
+imd_underlying_indicators_environment_sheet <- ini_file_settings$filenames$imd_underlying_indicators_environment_sheet
 
+lsoa11_lsoa21 <- ini_file_settings$filenames$lsoa11_lsoa21
+  
 # Declare the geographical to organisational data function
 fnGeo2Org <- function(df_geo, df_weighting){
   # The data frame df_geo should contain the geographical based data, and the data frame 
@@ -186,8 +191,7 @@ df_gp_popn <- df_gp_popn %>%
 
 # * 1.4. Location to ICB to NHS England Region lookup ----
 # ````````````````````````````````````````````````````````
-df_loc_icb_nher_lu <- read_excel(path = loc_icb_nhser_lookup_filename,
-           sheet = loc_icb_nhser_lookup_sheet) %>%
+df_loc_icb_nher_lu <- read.csv(loc_icb_nhser_lookup_filename) %>%
   select(2, 4, 5, 6, 8, 9) %>% 
   rename_with(.fn = ~c('loc22cd', 
                        'icb22ons', 'icb22cd', 'icb22nm', 
@@ -557,7 +561,7 @@ df_ethnicity <- read.csv(ethnicity_filename) %>%
   rename_with(.fn = ~c('lsoa21cd', 'asian', 'black', 'mixed', 'white', 'other', 'total_popn'))
 
 # Load the 2011 to 2021 LSOA lookup
-df_lsoa11_lsoa21 <- read.csv('D:/Data/OpenGeography/Lookups/LSOA11_LSOA21/LSOA_(2011)_to_LSOA_(2021)_to_Local_Authority_District_(2022)_Lookup_for_England_and_Wales.csv') %>%
+df_lsoa11_lsoa21 <- read.csv(lsoa11_lsoa21) %>%
   select(1, 3, 5) %>% 
   rename_with(.fn = function(x){c('lsoa11cd', 'lsoa21cd', 'chgind')}) %>%
   # Ignore the 'complex' mappings keeping the complex unchanged 'XU' mappings
@@ -734,8 +738,8 @@ prac_dist_matrix <- dist(scale(df_prac_index[,c(10:45, 152:155, 157:206)]))
 df_prac_distances <- dist2list(prac_dist_matrix) %>% 
   filter(col!=row) %>%
   transmute(
-    orig = df_prac_index$org_code[row],
-    dest = df_prac_index$org_code[col],
+    orig = df_prac_index$ORG_CODE[row],
+    dest = df_prac_index$ORG_CODE[col],
     distance = value
   )
 
@@ -745,8 +749,8 @@ pcn_dist_matrix <- dist(scale(df_pcn_index[,c(10:45, 152:155, 157:207)]))
 df_pcn_distances <- dist2list(pcn_dist_matrix) %>% 
   filter(col!=row) %>%
   transmute(
-    orig = df_pcn_index$org_code[row],
-    dest = df_pcn_index$org_code[col],
+    orig = df_pcn_index$ORG_CODE[row],
+    dest = df_pcn_index$ORG_CODE[col],
     distance = value
   )
 
@@ -773,7 +777,7 @@ factoextra::fviz_nbclust(kmeans_input, kmeans, method = "wss", iter.max = 20)
 factoextra::fviz_nbclust(kmeans_input, kmeans, method = "silhouette", iter.max = 20) + labs(subtitle = "Silhouette method")
 res_kmeans <- kmeans(kmeans_input, centers = 7, iter.max = 20, nstart = 20)
 df_prac_index$cluster <- res_kmeans$cluster
-df_prac_clust <- df_prac_index %>% select(org_code, cluster)
+df_prac_clust <- df_prac_index %>% select(ORG_CODE, cluster)
 
 # K-means clustering set-up
 kmeans_input <- df_pcn_index %>% select(c(10:45, 152:155, 157:207))
@@ -784,7 +788,7 @@ factoextra::fviz_nbclust(kmeans_input, kmeans, method = "wss", iter.max = 20)
 factoextra::fviz_nbclust(kmeans_input, kmeans, method = "silhouette", iter.max = 20) + labs(subtitle = "Silhouette method")
 res_kmeans <- kmeans(kmeans_input, centers = 5, iter.max = 20, nstart = 20)
 df_pcn_index$cluster <- res_kmeans$cluster
-df_pcn_clust <- df_pcn_index %>% select(org_code, cluster)
+df_pcn_clust <- df_pcn_index %>% select(ORG_CODE, cluster)
 save(list=c('df_prac_clust', 'df_pcn_clust'), file = './output/clusters.RObj')
 
 # 7. Map ----
@@ -794,15 +798,14 @@ save(list=c('df_prac_clust', 'df_pcn_clust'), file = './output/clusters.RObj')
 # load('./output/dist_data.RObj')
 
 palCluster <- colorFactor(palette = 'Set1', domain = df_prac_index$cluster)
-labels = 
 
 prac_map <- leaflet() %>%
   addTiles() %>%
   addCircleMarkers(data = df_prac_index %>% 
-                     select(org_code, org_name, postcode, popn_persons, 
-                            icb_code, icb_name, 
-                            nhser_code, nhser_name,
-                            latitude, longitude,
+                     select(ORG_CODE, ORG_NAME, POSTCODE, POPN, 
+                            ICB_CODE, ICB_NAME, 
+                            NHSER_CODE, NHSER_NAME,
+                            LATITUDE, LONGITUDE,
                             cluster) %>%
                      filter(cluster == 1),
                    weight = 1,
@@ -811,17 +814,17 @@ prac_map <- leaflet() %>%
                    fillColor = ~palCluster(cluster),
                    fillOpacity = 0.8,
                    popup = ~paste0(
-                     'Practice: ', org_name, ' - [', org_code, ']<br>',
-                     'ICB: ', icb_name, ' - [', icb_code, ']<br>',
-                     'Region: ', nhser_name, ' - [', nhser_code, ']<br>',
-                     'Popn: ', prettyNum(popn_persons, big.mark = ',')
+                     'Practice: ', ORG_NAME, ' - [', ORG_CODE, ']<br>',
+                     'ICB: ', ICB_NAME, ' - [', ICB_CODE, ']<br>',
+                     'Region: ', NHSER_NAME, ' - [', NHSER_CODE, ']<br>',
+                     'Popn: ', prettyNum(POPN, big.mark = ',')
                    ),
                    group = '1') %>%
   addCircleMarkers(data = df_prac_index %>% 
-                     select(org_code, org_name, postcode, popn_persons, 
-                            icb_code, icb_name, 
-                            nhser_code, nhser_name,
-                            latitude, longitude,
+                     select(ORG_CODE, ORG_NAME, POSTCODE, POPN, 
+                            ICB_CODE, ICB_NAME, 
+                            NHSER_CODE, NHSER_NAME,
+                            LATITUDE, LONGITUDE,
                             cluster) %>%
                      filter(cluster == 2),
                    weight = 1,
@@ -830,17 +833,17 @@ prac_map <- leaflet() %>%
                    fillColor = ~palCluster(cluster),
                    fillOpacity = 0.8,
                    popup = ~paste0(
-                     'Practice: ', org_name, ' - [', org_code, ']<br>',
-                     'ICB: ', icb_name, ' - [', icb_code, ']<br>',
-                     'Region: ', nhser_name, ' - [', nhser_code, ']<br>',
-                     'Popn: ', prettyNum(popn_persons, big.mark = ',')
+                     'Practice: ', ORG_NAME, ' - [', ORG_CODE, ']<br>',
+                     'ICB: ', ICB_NAME, ' - [', ICB_CODE, ']<br>',
+                     'Region: ', NHSER_NAME, ' - [', NHSER_CODE, ']<br>',
+                     'Popn: ', prettyNum(POPN, big.mark = ',')
                    ),
                    group = '2') %>%
   addCircleMarkers(data = df_prac_index %>% 
-                     select(org_code, org_name, postcode, popn_persons, 
-                            icb_code, icb_name, 
-                            nhser_code, nhser_name,
-                            latitude, longitude,
+                     select(ORG_CODE, ORG_NAME, POSTCODE, POPN, 
+                            ICB_CODE, ICB_NAME, 
+                            NHSER_CODE, NHSER_NAME,
+                            LATITUDE, LONGITUDE,
                             cluster) %>%
                      filter(cluster == 3),
                    weight = 1,
@@ -849,17 +852,17 @@ prac_map <- leaflet() %>%
                    fillColor = ~palCluster(cluster),
                    fillOpacity = 0.8,
                    popup = ~paste0(
-                     'Practice: ', org_name, ' - [', org_code, ']<br>',
-                     'ICB: ', icb_name, ' - [', icb_code, ']<br>',
-                     'Region: ', nhser_name, ' - [', nhser_code, ']<br>',
-                     'Popn: ', prettyNum(popn_persons, big.mark = ',')
+                     'Practice: ', ORG_NAME, ' - [', ORG_CODE, ']<br>',
+                     'ICB: ', ICB_NAME, ' - [', ICB_CODE, ']<br>',
+                     'Region: ', NHSER_NAME, ' - [', NHSER_CODE, ']<br>',
+                     'Popn: ', prettyNum(POPN, big.mark = ',')
                    ),
                    group = '3') %>%
   addCircleMarkers(data = df_prac_index %>% 
-                     select(org_code, org_name, postcode, popn_persons, 
-                            icb_code, icb_name, 
-                            nhser_code, nhser_name,
-                            latitude, longitude,
+                     select(ORG_CODE, ORG_NAME, POSTCODE, POPN, 
+                            ICB_CODE, ICB_NAME, 
+                            NHSER_CODE, NHSER_NAME,
+                            LATITUDE, LONGITUDE,
                             cluster) %>%
                      filter(cluster == 4),
                    weight = 1,
@@ -868,17 +871,17 @@ prac_map <- leaflet() %>%
                    fillColor = ~palCluster(cluster),
                    fillOpacity = 0.8,
                    popup = ~paste0(
-                     'Practice: ', org_name, ' - [', org_code, ']<br>',
-                     'ICB: ', icb_name, ' - [', icb_code, ']<br>',
-                     'Region: ', nhser_name, ' - [', nhser_code, ']<br>',
-                     'Popn: ', prettyNum(popn_persons, big.mark = ',')
+                     'Practice: ', ORG_NAME, ' - [', ORG_CODE, ']<br>',
+                     'ICB: ', ICB_NAME, ' - [', ICB_CODE, ']<br>',
+                     'Region: ', NHSER_NAME, ' - [', NHSER_CODE, ']<br>',
+                     'Popn: ', prettyNum(POPN, big.mark = ',')
                    ),
                    group = '4') %>%
   addCircleMarkers(data = df_prac_index %>% 
-                     select(org_code, org_name, postcode, popn_persons, 
-                            icb_code, icb_name, 
-                            nhser_code, nhser_name,
-                            latitude, longitude,
+                     select(ORG_CODE, ORG_NAME, POSTCODE, POPN, 
+                            ICB_CODE, ICB_NAME, 
+                            NHSER_CODE, NHSER_NAME,
+                            LATITUDE, LONGITUDE,
                             cluster) %>%
                      filter(cluster == 5),
                    weight = 1,
@@ -887,17 +890,17 @@ prac_map <- leaflet() %>%
                    fillColor = ~palCluster(cluster),
                    fillOpacity = 0.8,
                    popup = ~paste0(
-                     'Practice: ', org_name, ' - [', org_code, ']<br>',
-                     'ICB: ', icb_name, ' - [', icb_code, ']<br>',
-                     'Region: ', nhser_name, ' - [', nhser_code, ']<br>',
-                     'Popn: ', prettyNum(popn_persons, big.mark = ',')
+                     'Practice: ', ORG_NAME, ' - [', ORG_CODE, ']<br>',
+                     'ICB: ', ICB_NAME, ' - [', ICB_CODE, ']<br>',
+                     'Region: ', NHSER_NAME, ' - [', NHSER_CODE, ']<br>',
+                     'Popn: ', prettyNum(POPN, big.mark = ',')
                    ),
                    group = '5') %>%
   addCircleMarkers(data = df_prac_index %>% 
-                     select(org_code, org_name, postcode, popn_persons, 
-                            icb_code, icb_name, 
-                            nhser_code, nhser_name,
-                            latitude, longitude,
+                     select(ORG_CODE, ORG_NAME, POSTCODE, POPN, 
+                            ICB_CODE, ICB_NAME, 
+                            NHSER_CODE, NHSER_NAME,
+                            LATITUDE, LONGITUDE,
                             cluster) %>%
                      filter(cluster == 6),
                    weight = 1,
@@ -906,17 +909,17 @@ prac_map <- leaflet() %>%
                    fillColor = ~palCluster(cluster),
                    fillOpacity = 0.8,
                    popup = ~paste0(
-                     'Practice: ', org_name, ' - [', org_code, ']<br>',
-                     'ICB: ', icb_name, ' - [', icb_code, ']<br>',
-                     'Region: ', nhser_name, ' - [', nhser_code, ']<br>',
-                     'Popn: ', prettyNum(popn_persons, big.mark = ',')
+                     'Practice: ', ORG_NAME, ' - [', ORG_CODE, ']<br>',
+                     'ICB: ', ICB_NAME, ' - [', ICB_CODE, ']<br>',
+                     'Region: ', NHSER_NAME, ' - [', NHSER_CODE, ']<br>',
+                     'Popn: ', prettyNum(POPN, big.mark = ',')
                    ),
                    group = '6') %>%
   addCircleMarkers(data = df_prac_index %>% 
-                     select(org_code, org_name, postcode, popn_persons, 
-                            icb_code, icb_name, 
-                            nhser_code, nhser_name,
-                            latitude, longitude,
+                     select(ORG_CODE, ORG_NAME, POSTCODE, POPN, 
+                            ICB_CODE, ICB_NAME, 
+                            NHSER_CODE, NHSER_NAME,
+                            LATITUDE, LONGITUDE,
                             cluster) %>%
                      filter(cluster == 7),
                    weight = 1,
@@ -925,10 +928,10 @@ prac_map <- leaflet() %>%
                    fillColor = ~palCluster(cluster),
                    fillOpacity = 0.8,
                    popup = ~paste0(
-                     'Practice: ', org_name, ' - [', org_code, ']<br>',
-                     'ICB: ', icb_name, ' - [', icb_code, ']<br>',
-                     'Region: ', nhser_name, ' - [', nhser_code, ']<br>',
-                     'Popn: ', prettyNum(popn_persons, big.mark = ',')
+                     'Practice: ', ORG_NAME, ' - [', ORG_CODE, ']<br>',
+                     'ICB: ', ICB_NAME, ' - [', ICB_CODE, ']<br>',
+                     'Region: ', NHSER_NAME, ' - [', NHSER_CODE, ']<br>',
+                     'Popn: ', prettyNum(POPN, big.mark = ',')
                    ),
                    group = '7') %>%
   addControl(
